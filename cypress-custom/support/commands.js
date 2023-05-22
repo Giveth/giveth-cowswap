@@ -1,5 +1,5 @@
 function _clickOnToken(inputOrOutput) {
-  cy.get(`#swap-currency-${inputOrOutput} .open-currency-select-button`).click()
+  cy.get(`#${inputOrOutput}-currency-input .open-currency-select-button`).click()
 }
 
 function _selectTokenFromSelector(tokenAddress, inputOrOutput) {
@@ -7,7 +7,7 @@ function _selectTokenFromSelector(tokenAddress, inputOrOutput) {
     .scrollIntoView()
     .should('be.visible')
     .click({ force: true })
-  cy.get(`#swap-currency-${inputOrOutput} .token-amount-input`).should('be.visible')
+  cy.get(`#${inputOrOutput}-currency-input .token-amount-input`).should('be.visible')
 }
 
 function _responseHandlerFactory(body) {
@@ -36,13 +36,19 @@ function selectInput(tokenAddress) {
   _selectTokenFromSelector(tokenAddress, 'input')
 }
 
+function pickToken(symbol, role) {
+  cy.get(`#${role}-currency-input .open-currency-select-button`).click()
+  cy.get('#token-search-input').type(symbol)
+  cy.get('#currency-list').get('div').contains(symbol).click({ force: true })
+}
+
 function enterInputAmount(tokenAddress, amount, selectToken = false) {
   // Choose whether to also select token
   // or just input amount
   if (selectToken) {
     selectOutput(tokenAddress)
   }
-  cy.get('#swap-currency-input .token-amount-input').type(amount.toString(), { force: true, delay: 400 })
+  cy.get('#input-currency-input .token-amount-input').type(amount.toString(), { force: true, delay: 400 })
 }
 
 function enterOutputAmount(tokenAddress, amount, selectToken = false) {
@@ -51,7 +57,7 @@ function enterOutputAmount(tokenAddress, amount, selectToken = false) {
   if (selectToken) {
     selectOutput(tokenAddress)
   }
-  cy.get('#swap-currency-input .token-amount-output').type(amount.toString(), { force: true, delay: 400 })
+  cy.get('#input-currency-input .token-amount-output').type(amount.toString(), { force: true, delay: 400 })
 }
 
 function stubResponse({ method, url, alias = 'stubbedResponse', body }) {
@@ -64,4 +70,5 @@ Cypress.Commands.add('swapSelectInput', selectInput)
 Cypress.Commands.add('swapSelectOutput', selectOutput)
 Cypress.Commands.add('swapEnterInputAmount', enterInputAmount)
 Cypress.Commands.add('swapEnterOutputAmount', enterOutputAmount)
+Cypress.Commands.add('limitPickToken', pickToken)
 Cypress.Commands.add('stubResponse', stubResponse)
