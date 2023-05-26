@@ -46,6 +46,10 @@ export interface AddUnserialisedPendingOrderParams extends GetRemoveOrderParams 
   order: Order
 }
 
+export interface MakeDonationParams extends GetRemoveOrderParams {
+  order: Order
+}
+
 interface AddPendingOrderParams extends GetRemoveOrderParams {
   order: SerializedOrder
 }

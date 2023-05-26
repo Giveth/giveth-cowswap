@@ -109,7 +109,6 @@ export default function useSendSwapTransaction(
         const {
           call: { address, calldata, value },
         } = bestCallOption
-
         return provider
           .getSigner()
           .sendTransaction({

@@ -5,6 +5,7 @@ import { Progress1 } from './steps/Progress1'
 import { Step2 } from './steps/Step2'
 import { Progress2 } from './steps/Progress2'
 import { Step3 } from './steps/Step3'
+import { Step4 } from './steps/Step4'
 import { StatusIconState } from './StatusIcon'
 import { transparentize } from 'polished'
 
@@ -13,6 +14,8 @@ export enum SmartOrderStatus {
   CREATION_MINED = 'CREATED',
   INDEXED = 'INDEXED',
   FILLED = 'FILLED',
+  DONATING = 'DONATING',
+  DONATED = 'DONATED',
 }
 
 type TxState = {
@@ -61,6 +64,8 @@ export interface EthFlowStepperProps {
    * To track cancellation tx
    */
   cancellation: TxState
+
+  donation?: any // TODO: type
 }
 
 const Wrapper = styled.div`
@@ -135,6 +140,7 @@ export function EthFlowStepper(props: EthFlowStepperProps) {
       <Step2 {...props} />
       <Progress2 {...props} />
       <Step3 {...props} />
+      <Step4 {...props} />
     </Wrapper>
   )
 }

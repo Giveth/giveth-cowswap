@@ -22,6 +22,7 @@ import React, { useState } from 'react'
 import { useModalIsOpen } from 'legacy/state/application/hooks'
 import { ApplicationModal } from 'legacy/state/application/reducer'
 import { useSwapButtonContext } from 'modules/swap/hooks/useSwapButtonContext'
+import { useDonationToggle } from 'modules/swap/hooks/useDonationToggle'
 import { ConfirmSwapModalSetupProps } from 'modules/swap/containers/ConfirmSwapModalSetup'
 import { EthFlowProps } from 'modules/swap/containers/EthFlow'
 import { SwapModals, SwapModalsProps } from 'modules/swap/containers/SwapModals'
@@ -66,6 +67,8 @@ export function SwapWidget() {
   const showRecipientControls = useShowRecipientControls(recipient)
   const isEthFlow = useIsEthFlow()
   const shouldZeroApprove = useShouldZeroApproveSwap()
+
+  const { isDonationEnabled, toggleDonationEnabled } = useDonationToggle()
 
   const isWrapUnwrapMode = wrapType !== WrapType.NOT_APPLICABLE
   const priceImpactParams = usePriceImpact({
@@ -193,6 +196,10 @@ export function SwapWidget() {
         {showTradeRates && <TradeRates {...tradeRatesProps} />}
         <SwapWarningsTop {...swapWarningsTopProps} />
         <SwapButtons {...swapButtonContext} />
+        <label>
+          <input type="checkbox" checked={isDonationEnabled} onChange={toggleDonationEnabled} />
+          Donate 1% of swap
+        </label>
         <SwapWarningsBottom {...swapWarningsBottomProps} />
       </>
     ),

@@ -18,8 +18,8 @@ type EthFlowStepperProps = {
 export function EthFlowStepper(props: EthFlowStepperProps) {
   const { order } = props
   const { native } = useDetectNativeToken()
-
   const allTxs = useAllTransactions()
+  const withDonation = true
 
   const creationHash = order?.orderCreationHash
   const cancellationHash = order?.cancellationHash
@@ -61,6 +61,11 @@ export function EthFlowStepper(props: EthFlowStepperProps) {
     cancellation: {
       hash: cancellationHash,
       failed: didCancellationFail(order, cancellationTx),
+    },
+    donation: {
+      order,
+      enabled: withDonation,
+      ready: state === SmartOrderStatus.FILLED,
     },
   }
 
