@@ -207,6 +207,7 @@ export function SwapWidget() {
 
   const params = {
     isEthFlow,
+    isDonationEnabled,
     compactView: true,
     recipient,
     showRecipient: showRecipientControls,

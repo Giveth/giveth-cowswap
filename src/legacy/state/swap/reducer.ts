@@ -7,6 +7,7 @@ import {
   replaceSwapState,
   selectCurrency,
   setRecipient,
+  setWithDonation,
   switchCurrencies,
   typeInput,
 } from 'legacy/state/swap/actions'
@@ -27,6 +28,7 @@ export interface SwapState {
   }
   // the typed recipient address or ENS name, or null if swap should go to sender
   readonly recipient: string | null
+  readonly withDonation: boolean
 }
 
 // Mod: added second parameter
@@ -43,6 +45,7 @@ export default createReducer<SwapState>(initialState, (builder) =>
         independentField: originalIndependentField,
         inputCurrencyId,
         outputCurrencyId,
+        withDonation,
       } = payload
 
       const { independentField, typedValue } = getEthFlowOverridesOnSelect(
@@ -63,6 +66,7 @@ export default createReducer<SwapState>(initialState, (builder) =>
         independentField,
         typedValue,
         recipient,
+        withDonation: withDonation ?? false,
       }
     })
     .addCase(replaceOnlyTradeRawState, (state, { payload }) => {
@@ -127,6 +131,9 @@ export default createReducer<SwapState>(initialState, (builder) =>
     })
     .addCase(setRecipient, (state, { payload: { recipient } }) => {
       state.recipient = recipient
+    })
+    .addCase(setWithDonation, (state, { payload: { withDonation } }) => {
+      state.withDonation = withDonation
     })
 )
 

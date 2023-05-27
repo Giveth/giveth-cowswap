@@ -7,6 +7,7 @@ import { useDetectNativeToken } from 'modules/swap/hooks/useDetectNativeToken'
 import { Order, OrderStatus } from 'legacy/state/orders/actions'
 import { NATIVE_CURRENCY_BUY_ADDRESS } from 'legacy/constants'
 import { isOrderExpired } from 'legacy/state/orders/utils'
+import { useSwapState } from 'legacy/state/swap/hooks'
 import { useAllTransactions } from 'legacy/state/enhancedTransactions/hooks'
 import { EnhancedTransactionDetails } from 'legacy/state/enhancedTransactions/reducer'
 import { formatSymbol } from 'utils/format'
@@ -19,12 +20,11 @@ export function EthFlowStepper(props: EthFlowStepperProps) {
   const { order } = props
   const { native } = useDetectNativeToken()
   const allTxs = useAllTransactions()
-  const withDonation = true
+  const { withDonation } = useSwapState()
 
   const creationHash = order?.orderCreationHash
   const cancellationHash = order?.cancellationHash
   // TODO: add refund hash when available from API
-
   const creationTx = creationHash ? allTxs[creationHash] : undefined
   const cancellationTx = cancellationHash ? allTxs[cancellationHash] : undefined
 

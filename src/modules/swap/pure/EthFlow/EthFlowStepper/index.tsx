@@ -1,4 +1,3 @@
-import React from 'react'
 import styled from 'styled-components/macro'
 import { Step1 } from './steps/Step1'
 import { Progress1 } from './steps/Progress1'
@@ -133,6 +132,7 @@ export const Progress = styled.div<ProgressProps>`
 `
 
 export function EthFlowStepper(props: EthFlowStepperProps) {
+  const { donation } = props
   return (
     <Wrapper>
       <Step1 {...props} />
@@ -140,7 +140,7 @@ export function EthFlowStepper(props: EthFlowStepperProps) {
       <Step2 {...props} />
       <Progress2 {...props} />
       <Step3 {...props} />
-      <Step4 {...props} />
+      {donation.enabled && <Step4 {...props} />}
     </Wrapper>
   )
 }

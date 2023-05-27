@@ -17,6 +17,7 @@ export interface TradeWidgetActions {
   onUserInput: CurrencyInputPanelProps['onUserInput']
   onChangeRecipient: SetRecipientProps['onChangeRecipient']
   onSwitchTokens(): void
+  onDonationToggle?(withDonation: boolean): void
 }
 
 interface TradeWidgetParams {
@@ -28,6 +29,7 @@ interface TradeWidgetParams {
   isTradePriceUpdating: boolean
   priceImpact: PriceImpact
   isRateLoading?: boolean
+  isDonationEnabled?: boolean
 }
 
 interface TradeWidgetSlots {
@@ -53,7 +55,7 @@ export function TradeWidget(props: TradeWidgetProps) {
   const { id, slots, inputCurrencyInfo, outputCurrencyInfo, actions, params } = props
   const { settingsWidget, lockScreen, middleContent, bottomContent } = slots
 
-  const { onCurrencySelection, onUserInput, onSwitchTokens, onChangeRecipient } = actions
+  const { onCurrencySelection, onUserInput, onSwitchTokens, onDonationToggle, onChangeRecipient } = actions
   const {
     compactView,
     showRecipient,
@@ -63,6 +65,7 @@ export function TradeWidget(props: TradeWidgetProps) {
     disableNonToken = false,
     priceImpact,
     recipient,
+    isDonationEnabled,
   } = params
 
   const { chainId } = useWalletInfo()
@@ -84,6 +87,10 @@ export function TradeWidget(props: TradeWidgetProps) {
     onChangeRecipient(null)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
+
+  useEffect(() => {
+    onDonationToggle && onDonationToggle(!!isDonationEnabled)
+  }, [isDonationEnabled])
 
   return (
     <styledEl.Container id={id}>

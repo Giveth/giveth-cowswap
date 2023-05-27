@@ -7,7 +7,7 @@ import { useAppDispatch, useAppSelector } from 'legacy/state/hooks'
 import { TOKEN_SHORTHANDS } from '../../constants/tokens'
 import { isAddress } from '../../utils'
 import { AppState } from 'legacy/state'
-import { Field, setRecipient, switchCurrencies, typeInput } from './actions'
+import { Field, setRecipient, setWithDonation, switchCurrencies, typeInput } from './actions'
 import { SwapState } from './reducer'
 import TradeGp from 'legacy/state/swap/TradeGp'
 import { useNavigateOnCurrencySelection } from 'modules/trade/hooks/useNavigateOnCurrencySelection'
@@ -76,6 +76,7 @@ export interface SwapActions {
   onSwitchTokens: () => void
   onUserInput: (field: Field, typedValue: string) => void
   onChangeRecipient: (recipient: string | null) => void
+  onDonationToggle?: (withDonation: boolean) => void
 }
 
 interface DerivedSwapInfo {
@@ -118,11 +119,19 @@ export function useSwapActionHandlers(): SwapActions {
     [dispatch]
   )
 
+  const onDonationToggle = useCallback(
+    (withDonation: boolean) => {
+      dispatch(setWithDonation({ withDonation }))
+    },
+    [dispatch]
+  )
+
   return {
     onSwitchTokens,
     onCurrencySelection,
     onUserInput,
     onChangeRecipient,
+    onDonationToggle,
   }
 }
 
@@ -402,6 +411,7 @@ export function queryParametersToSwapState(
     typedValue,
     independentField,
     recipient,
+    withDonation: !!parsedQs.withDonation,
   }
 }
 
