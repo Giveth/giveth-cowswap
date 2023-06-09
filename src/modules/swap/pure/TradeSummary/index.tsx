@@ -30,13 +30,10 @@ export function TradeSummaryContent(props: TradeSummaryContentProps) {
             showHelpers={showHelpers}
           />
         )}
-
         {/* Slippage */}
         <RowSlippage allowedSlippage={allowedSlippage} showSettingOnClick={false} />
-
         {/* Transaction settings (eth flow only) */}
         <RowDeadline />
-
         {/* Min/Max received */}
         <RowReceivedAfterSlippage trade={trade} showHelpers={showHelpers} allowedSlippage={allowedSlippage} />
       </AutoColumn>

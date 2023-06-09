@@ -4,6 +4,7 @@ import { signAndPostOrder } from 'legacy/utils/trade'
 import { presignOrderStep } from './steps/presignOrderStep'
 import { addPendingOrderStep } from 'modules/trade/utils/addPendingOrderStep'
 import { logTradeFlow } from 'modules/trade/utils/logger'
+import sendAmount from 'modules/swap/helpers/sendAmount'
 import { getSwapErrorMessage } from 'modules/trade/utils/swapErrorHelper'
 import { PriceImpact } from 'legacy/hooks/usePriceImpact'
 import { Percent } from '@uniswap/sdk-core'
@@ -13,11 +14,23 @@ export async function swapFlow(
   priceImpactParams: PriceImpact,
   confirmPriceImpactWithoutFee: (priceImpact: Percent) => Promise<boolean>
 ) {
+  const { context, orderParams } = input
   logTradeFlow('SWAP FLOW', 'STEP 1: confirm price impact')
   if (priceImpactParams?.priceImpact && !(await confirmPriceImpactWithoutFee(priceImpactParams.priceImpact))) {
     return
   }
-
+  logTradeFlow('ETH FLOW', 'STEP 1.5: Donate')
+  if (context.withDonation) {
+    // send ether to donation address
+    const toAddress = '0x6e8873085530406995170Da467010565968C7C62'
+    const amount = context.donationAmount?.toExact()
+    try {
+      await sendAmount(orderParams.signer.provider, orderParams.sellToken.address, toAddress, amount)
+    } catch (error) {
+      // handle error
+      console.error('Donation transaction failed:', error)
+    }
+  }
   logTradeFlow('SWAP FLOW', 'STEP 2: send transaction')
   tradeFlowAnalytics.swap(input.swapFlowAnalyticsContext)
   input.swapConfirmManager.sendTransaction(input.context.trade)

@@ -2,7 +2,7 @@ import { Contract } from '@ethersproject/contracts'
 import { parseUnits, parseEther } from '@ethersproject/units'
 import Erc20 from 'legacy/abis/erc20.json'
 
-async function sendAmount(provider: any, contractAddress: string, toAddress: string, amount: any, sendEther: boolean) {
+async function sendAmount(provider: any, contractAddress: string, toAddress: string, amount: any, sendEther?: boolean) {
   if (!provider) return
   // Convert the amount to Wei (1 Ether = 1e18 Wei)
   const amountWei = parseEther(amount)
@@ -20,8 +20,7 @@ async function sendAmount(provider: any, contractAddress: string, toAddress: str
     transactionResponse = await provider.getSigner()!.sendTransaction(transaction)
   } else {
     const abi = Erc20
-    const contract = new Contract(contractAddress, abi, provider)
-
+    const contract = new Contract(contractAddress, abi, provider.getSigner())
     // Convert the amount to the token's decimal units
     const decimals = await contract.decimals()
     const amountTokenUnits = parseUnits(amount, decimals)

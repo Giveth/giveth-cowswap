@@ -196,10 +196,12 @@ export function SwapWidget() {
         {showTradeRates && <TradeRates {...tradeRatesProps} />}
         <SwapWarningsTop {...swapWarningsTopProps} />
         <SwapButtons {...swapButtonContext} />
-        <label>
-          <input type="checkbox" checked={isDonationEnabled} onChange={toggleDonationEnabled} />
-          Donate 1% of swap
-        </label>
+        {!isWrapUnwrapMode && (
+          <label>
+            <input type="checkbox" checked={isDonationEnabled} onChange={toggleDonationEnabled} />
+            Donate 1% of swap
+          </label>
+        )}
         <SwapWarningsBottom {...swapWarningsBottomProps} />
       </>
     ),
