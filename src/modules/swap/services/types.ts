@@ -17,6 +17,8 @@ export interface BaseFlowContext {
   context: {
     chainId: number
     trade: TradeGp
+    withDonation?: boolean | undefined
+    donationAmount: CurrencyAmount<Currency> | undefined
     inputAmountWithSlippage: CurrencyAmount<Currency>
     outputAmountWithSlippage: CurrencyAmount<Currency>
   }

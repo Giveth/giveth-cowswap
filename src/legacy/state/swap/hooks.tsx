@@ -28,6 +28,7 @@ import { t } from '@lingui/macro'
 import { formatSymbol } from 'utils/format'
 import { SupportedChainId } from '@cowprotocol/cow-sdk'
 import { useCurrency } from 'legacy/hooks/Tokens'
+import JSBI from 'jsbi'
 
 export const BAD_RECIPIENT_ADDRESSES: { [address: string]: true } = {
   '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f': true, // v2 factory
@@ -84,6 +85,7 @@ interface DerivedSwapInfo {
   currenciesIds: { [field in Field]?: string | null }
   currencyBalances: { [field in Field]?: CurrencyAmount<Currency> }
   parsedAmount: CurrencyAmount<Currency> | undefined
+  donationAmount?: CurrencyAmount<Currency> | undefined
   inputError?: string
   v2Trade: TradeGp | undefined
   allowedSlippage: Percent
@@ -241,6 +243,7 @@ export function useDerivedSwapInfo(): DerivedSwapInfo {
     [Field.INPUT]: { currencyId: inputCurrencyId },
     [Field.OUTPUT]: { currencyId: outputCurrencyId },
     recipient,
+    withDonation,
   } = useSwapState()
 
   const inputCurrency = useTokenBySymbolOrAddress(inputCurrencyId)
@@ -258,6 +261,11 @@ export function useDerivedSwapInfo(): DerivedSwapInfo {
     () => tryParseCurrencyAmount(typedValue, (isExactIn ? inputCurrency : outputCurrency) ?? undefined),
     [inputCurrency, isExactIn, outputCurrency, typedValue]
   )
+
+  // Calculate 1% of the parsed amount -- 1% is the default donation amount
+  const donationAmount = useMemo(() => {
+    return parsedAmount ? parsedAmount.multiply(JSBI.BigInt(1)).divide(JSBI.BigInt(100)) : undefined
+  }, [parsedAmount])
 
   const currencies: { [field in Field]?: Currency | null } = useMemo(
     () => ({
@@ -350,14 +358,15 @@ export function useDerivedSwapInfo(): DerivedSwapInfo {
     // compare input balance to max input based on version
     // const [balanceIn, amountIn] = [currencyBalances[Field.INPUT], trade.trade?.maximumAmountIn(allowedSlippage)] // mod
     const [balanceIn, amountIn] = [currencyBalances[Field.INPUT], v2Trade?.maximumAmountIn(allowedSlippage)] // mod
+    const totalAmount = withDonation && donationAmount && amountIn ? amountIn.add(donationAmount) : amountIn
 
     // Balance not loaded - fix for https://github.com/cowprotocol/cowswap/issues/451
     if (!balanceIn && inputCurrency) {
       inputError = t`Couldn't load balances`
     }
 
-    if (balanceIn && amountIn && balanceIn.lessThan(amountIn)) {
-      inputError = t`Insufficient ${formatSymbol(amountIn.currency.symbol)} balance`
+    if (balanceIn && totalAmount && balanceIn.lessThan(totalAmount)) {
+      inputError = t`Insufficient ${formatSymbol(totalAmount.currency.symbol)} balance`
     }
 
     return inputError
@@ -370,13 +379,22 @@ export function useDerivedSwapInfo(): DerivedSwapInfo {
         currenciesIds,
         currencyBalances,
         parsedAmount,
+        donationAmount,
         inputError,
         v2Trade: v2Trade || undefined, // mod
         allowedSlippage,
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [allowedSlippage, currencyBalances, currenciesIds, inputError, parsedAmount, JSON.stringify(v2Trade)] // mod
+    [
+      allowedSlippage,
+      currencyBalances,
+      currenciesIds,
+      inputError,
+      parsedAmount,
+      donationAmount,
+      JSON.stringify(v2Trade),
+    ] // mod
   )
 }
 

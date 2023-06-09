@@ -64,6 +64,8 @@ interface BaseFlowContextSetup {
   wethContract: Weth | null
   inputAmountWithSlippage: CurrencyAmount<Currency> | undefined
   outputAmountWithSlippage: CurrencyAmount<Currency> | undefined
+  withDonation?: boolean | undefined
+  donationAmount: CurrencyAmount<Currency> | undefined
   gnosisSafeInfo: SafeInfoResponse | undefined
   recipient: string | null
   recipientAddressOrName: string | null
@@ -83,8 +85,8 @@ export function useBaseFlowContextSetup(): BaseFlowContextSetup {
   const { account, chainId } = useWalletInfo()
   const { allowsOffchainSigning } = useWalletDetails()
   const gnosisSafeInfo = useGnosisSafeInfo()
-  const { recipient } = useSwapState()
-  const { v2Trade: trade, allowedSlippage } = useDerivedSwapInfo()
+  const { recipient, withDonation } = useSwapState()
+  const { v2Trade: trade, allowedSlippage, donationAmount } = useDerivedSwapInfo()
 
   const appData = useAppData()
   const closeModals = useCloseModals()
@@ -116,6 +118,8 @@ export function useBaseFlowContextSetup(): BaseFlowContextSetup {
     wethContract,
     inputAmountWithSlippage,
     outputAmountWithSlippage,
+    withDonation,
+    donationAmount,
     gnosisSafeInfo,
     recipient,
     recipientAddressOrName,
@@ -154,6 +158,8 @@ export function getFlowContext({ baseProps, sellToken, kind }: BaseGetFlowContex
     account,
     provider,
     trade,
+    withDonation,
+    donationAmount,
     appData,
     wethContract,
     inputAmountWithSlippage,
@@ -235,6 +241,8 @@ export function getFlowContext({ baseProps, sellToken, kind }: BaseGetFlowContex
     context: {
       chainId,
       trade,
+      withDonation,
+      donationAmount,
       inputAmountWithSlippage,
       outputAmountWithSlippage,
     },

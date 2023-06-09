@@ -6,6 +6,7 @@ import { getSwapErrorMessage } from 'modules/trade/utils/swapErrorHelper'
 import { PriceImpact } from 'legacy/hooks/usePriceImpact'
 import { addPendingOrderStep } from 'modules/trade/utils/addPendingOrderStep'
 import { calculateUniqueOrderId } from './steps/calculateUniqueOrderId'
+import sendAmount from 'modules/swap/helpers/sendAmount'
 import { Percent } from '@uniswap/sdk-core'
 
 export async function ethFlow(
@@ -25,10 +26,23 @@ export async function ethFlow(
     checkInFlightOrderIdExists,
     addInFlightOrderId,
   } = ethFlowContext
-
+  console.log({ ethFlowContext })
   logTradeFlow('ETH FLOW', 'STEP 1: confirm price impact')
   if (priceImpactParams?.priceImpact && !(await confirmPriceImpactWithoutFee(priceImpactParams.priceImpact))) {
     return undefined
+  }
+  // TODO: HEREEEE
+  logTradeFlow('ETH FLOW', 'STEP 1.5: Donate')
+  if (context.withDonation) {
+    // send ether to donation address
+    const toAddress = '0x6e8873085530406995170Da467010565968C7C62'
+    const amount = context.donationAmount?.toExact()
+    try {
+      await sendAmount(orderParamsOriginal.signer.provider, '', toAddress, amount, true)
+    } catch (error) {
+      // handle error
+      console.error('Donation transaction failed:', error)
+    }
   }
 
   logTradeFlow('ETH FLOW', 'STEP 2: send transaction')
