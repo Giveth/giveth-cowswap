@@ -14,7 +14,7 @@ if (!process.env.GITHUB_ENV) {
 }
 
 export default defineConfig({
-  projectId: 'yp82ef',
+  projectId: 'otdnht',
   defaultCommandTimeout: 20000,
   pageLoadTimeout: 120000,
   screenshotsFolder: 'cypress-custom/screenshots',
