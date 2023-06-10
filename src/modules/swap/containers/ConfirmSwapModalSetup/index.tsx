@@ -1,7 +1,7 @@
 import { ConfirmSwapModal } from 'legacy/components/swap/ConfirmSwapModal'
 import { useCallback } from 'react'
 import TradeGp from 'legacy/state/swap/TradeGp'
-import { Percent } from '@uniswap/sdk-core'
+import { Percent, Currency, CurrencyAmount } from '@uniswap/sdk-core'
 import { Field } from 'legacy/state/swap/actions'
 import { useAtomValue } from 'jotai/utils'
 import { swapConfirmAtom } from 'modules/swap/state/swapConfirmAtom'
@@ -23,10 +23,22 @@ export interface ConfirmSwapModalSetupProps {
   priceImpact?: Percent
   rateInfoParams: RateInfoParams
   dismissNativeWrapModal(): void
+  isDonationEnabled: boolean
+  donationAmount?: CurrencyAmount<Currency> | null
 }
 
 export function ConfirmSwapModalSetup(props: ConfirmSwapModalSetupProps) {
-  const { trade, recipient, allowedSlippage, priceImpact, handleSwap, dismissNativeWrapModal, rateInfoParams } = props
+  const {
+    trade,
+    recipient,
+    allowedSlippage,
+    priceImpact,
+    handleSwap,
+    dismissNativeWrapModal,
+    rateInfoParams,
+    donationAmount,
+    isDonationEnabled,
+  } = props
 
   const swapConfirmState = useAtomValue(swapConfirmAtom)
   const { operationType, pendingText } = useAtomValue(transactionConfirmAtom)
@@ -64,6 +76,7 @@ export function ConfirmSwapModalSetup(props: ConfirmSwapModalSetupProps) {
         priceImpact={priceImpact}
         onConfirm={handleSwap}
         onDismiss={handleConfirmDismiss}
+        donationAmount={isDonationEnabled && donationAmount ? donationAmount : null}
       />
 
       <TransactionConfirmationModal

@@ -1,5 +1,5 @@
 import { Trans } from '@lingui/macro'
-import { Percent, TradeType } from '@uniswap/sdk-core'
+import { Percent, TradeType, CurrencyAmount, Currency } from '@uniswap/sdk-core'
 import React, { useContext, useMemo } from 'react'
 import { AlertTriangle, ArrowDown } from 'react-feather'
 import { Text } from 'rebass'
@@ -72,6 +72,7 @@ export interface SwapModalHeaderProps {
   NoImpactWarning: React.ReactNode
   allowsOffchainSigning: boolean
   rateInfoParams: RateInfoParams
+  donationAmount?: CurrencyAmount<Currency> | null
 }
 
 export default function SwapModalHeader({
@@ -86,6 +87,7 @@ export default function SwapModalHeader({
   NoImpactWarning,
   allowsOffchainSigning,
   rateInfoParams,
+  donationAmount,
 }: SwapModalHeaderProps) {
   const slippageAdjustedAmounts = useMemo(
     () => computeSlippageAdjustedAmounts(trade, allowedSlippage),
@@ -216,6 +218,21 @@ export default function SwapModalHeader({
           </RowBetween>
         </SwapShowAcceptChanges>
       ) : null}
+      {donationAmount && (
+        <RowBetween>
+          <Text fontSize={12} fontWeight={500} color={theme.text3}>
+            Giveth Donation{' '}
+            {/* <MouseoverTooltipContent content={'1% of your swap goes to donation.eth'} wrap>
+              <StyledInfoIcon size={16} />
+            </MouseoverTooltipContent> */}
+          </Text>
+          <Text fontSize={12} fontWeight={500}>
+            {`${donationAmount.toExact()} ${donationAmount.currency.symbol} (≈$${+donationAmount
+              .multiply(trade?.executionPrice!)
+              .toExact()})`}
+          </Text>
+        </RowBetween>
+      )}
       <AutoColumn
         justify="flex-start"
         gap="sm"

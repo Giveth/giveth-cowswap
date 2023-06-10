@@ -20,6 +20,8 @@ export interface TradeRatesProps {
   discount: number
   fee: CurrencyAmount<Currency> | null
   rateInfoParams: RateInfoParams
+  isDonationEnabled: boolean
+  donationAmount?: CurrencyAmount<Currency> | null
 }
 
 export const TradeRates = React.memo(function (props: TradeRatesProps) {
@@ -32,12 +34,15 @@ export const TradeRates = React.memo(function (props: TradeRatesProps) {
     userAllowedSlippage,
     // discount,
     rateInfoParams,
+    isDonationEnabled,
+    donationAmount,
   } = props
   // const openCowSubsidyModal = useOpenModal(ApplicationModal.COW_SUBSIDY)
 
   const showPrice = !!trade
   const showTradeBasicDetails = (isFeeGreater || trade) && fee
   const showRowDeadline = !!trade
+  const showDonation = !!trade && isDonationEnabled
 
   return (
     <styledEl.Box>
@@ -50,6 +55,8 @@ export const TradeRates = React.memo(function (props: TradeRatesProps) {
           allowsOffchainSigning={allowsOffchainSigning}
           trade={trade}
           fee={fee}
+          showDonation={showDonation}
+          donationAmount={donationAmount}
         />
       )}
       {/* TRANSACTION DEADLINE */}

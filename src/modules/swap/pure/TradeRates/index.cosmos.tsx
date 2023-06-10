@@ -39,6 +39,8 @@ const defaultProps: TradeRatesProps = {
   userAllowedSlippage: new Percent(12, 10_000),
   fee: CurrencyAmount.fromRawAmount(currency, fee * 10 ** 18),
   rateInfoParams,
+  isDonationEnabled: false,
+  donationAmount: CurrencyAmount.fromRawAmount(currency, 0),
 }
 
 export default <TradeRates {...defaultProps} />

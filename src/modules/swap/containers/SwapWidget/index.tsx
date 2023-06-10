@@ -53,7 +53,7 @@ export function SwapWidget() {
   useSetupSwapAmountsFromUrl()
 
   const { chainId, account } = useWalletInfo()
-  const { allowedSlippage, currencies, currenciesIds, v2Trade: trade } = useDerivedSwapInfo()
+  const { allowedSlippage, currencies, currenciesIds, v2Trade: trade, donationAmount } = useDerivedSwapInfo()
   const wrapType = useWrapType()
   const parsedAmounts = useSwapCurrenciesAmounts(wrapType)
   const { isSupportedWallet, allowsOffchainSigning } = useWalletDetails()
@@ -134,6 +134,8 @@ export function SwapWidget() {
     priceImpact: priceImpactParams.priceImpact,
     dismissNativeWrapModal,
     rateInfoParams,
+    isDonationEnabled,
+    donationAmount,
   }
 
   const ethFlowProps: EthFlowProps = {
@@ -185,6 +187,8 @@ export function SwapWidget() {
     fee,
     discount: subsidyAndBalance.subsidy.discount || 0,
     rateInfoParams,
+    isDonationEnabled,
+    donationAmount,
   }
 
   const showTradeRates = !isWrapUnwrapMode

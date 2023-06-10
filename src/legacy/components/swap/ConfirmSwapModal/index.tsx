@@ -1,5 +1,5 @@
 import { Trans } from '@lingui/macro'
-import { Percent } from '@uniswap/sdk-core'
+import { Percent, CurrencyAmount, Currency } from '@uniswap/sdk-core'
 import { useCallback, useMemo } from 'react'
 
 import TradeGp from 'legacy/state/swap/TradeGp'
@@ -27,6 +27,7 @@ type ConfirmSwapModalProps = {
   onConfirm: () => void
   onDismiss: () => void
   rateInfoParams: RateInfoParams
+  donationAmount?: CurrencyAmount<Currency> | null
 }
 
 export function ConfirmSwapModal({
@@ -39,6 +40,7 @@ export function ConfirmSwapModal({
   recipient,
   priceImpact,
   rateInfoParams,
+  donationAmount,
 }: ConfirmSwapModalProps) {
   const { swapErrorMessage, showConfirm, attemptingTxn, txHash, tradeToConfirm: originalTrade } = swapConfirmState
   const { allowsOffchainSigning } = useWalletDetails()
@@ -58,6 +60,7 @@ export function ConfirmSwapModal({
         recipient={recipient}
         showAcceptChanges={showAcceptChanges}
         onAcceptChanges={onAcceptChanges}
+        donationAmount={donationAmount}
       />
     ) : null
   }, [
