@@ -26,6 +26,7 @@ describe('hooks', () => {
         chainId: null,
         independentField: Field.OUTPUT,
         recipient: null,
+        withDonation: false,
       })
     })
 
@@ -43,6 +44,7 @@ describe('hooks', () => {
         chainId: null,
         independentField: Field.INPUT,
         recipient: null,
+        withDonation: false,
       })
     })
 
@@ -60,6 +62,7 @@ describe('hooks', () => {
         chainId: null,
         independentField: Field.INPUT,
         recipient: null,
+        withDonation: false,
       })
     })
 
@@ -77,6 +80,7 @@ describe('hooks', () => {
         chainId: null,
         independentField: Field.INPUT,
         recipient: null,
+        withDonation: false,
       })
     })
 
@@ -97,6 +101,7 @@ describe('hooks', () => {
         chainId: null,
         independentField: Field.INPUT,
         recipient: '0x0fF2D1eFd7A57B7562b2bf27F3f37899dB27F4a5',
+        withDonation: false,
       })
     })
     test('accepts any recipient', () => {
@@ -116,6 +121,7 @@ describe('hooks', () => {
         chainId: null,
         independentField: Field.INPUT,
         recipient: 'bob.argent.xyz',
+        withDonation: false,
       })
     })
   })
