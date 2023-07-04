@@ -149,38 +149,38 @@ jobs:
         if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.owner.login != github.repository_owner }}
         run: yarn eslint .
 
-  vercel-dev:
-    # Deploys to Vercel dev environment
-    name: Vercel dev
-    needs: [test, lint]
-    if: github.ref == 'refs/heads/develop'
-    uses: ./.github/workflows/vercel.yml
-    secrets: inherit
-    with:
-      env_name: dev
+  # vercel-dev:
+  #   # Deploys to Vercel dev environment
+  #   name: Vercel dev
+  #   needs: [test, lint]
+  #   if: github.ref == 'refs/heads/develop'
+  #   uses: ./.github/workflows/vercel.yml
+  #   secrets: inherit
+  #   with:
+  #     env_name: dev
 
-  vercel-pre-prod:
-    # Deploys to Vercel staging and barn environments
-    name: Vercel pre-prod
-    needs: [test, lint]
-    if: startsWith(github.ref, 'refs/tags/v')
-    uses: ./.github/workflows/vercel.yml
-    secrets: inherit
-    strategy:
-      matrix:
-        env_name: [barn, staging] # deploys both in parallel
-    with:
-      env_name: ${{ matrix.env_name }}
+  # vercel-pre-prod:
+  #   # Deploys to Vercel staging and barn environments
+  #   name: Vercel pre-prod
+  #   needs: [test, lint]
+  #   if: startsWith(github.ref, 'refs/tags/v')
+  #   uses: ./.github/workflows/vercel.yml
+  #   secrets: inherit
+  #   strategy:
+  #     matrix:
+  #       env_name: [barn, staging] # deploys both in parallel
+  #   with:
+  #     env_name: ${{ matrix.env_name }}
 
-  vercel-prod:
-    # Deploys to Vercel prod environment
-    name: Vercel prod
-    needs: [test, lint]
-    if: github.event_name == 'workflow_dispatch'
-    uses: ./.github/workflows/vercel.yml
-    secrets: inherit
-    with:
-      env_name: prod
+  # vercel-prod:
+  #   # Deploys to Vercel prod environment
+  #   name: Vercel prod
+  #   needs: [test, lint]
+  #   if: github.event_name == 'workflow_dispatch'
+  #   uses: ./.github/workflows/vercel.yml
+  #   secrets: inherit
+  #   with:
+  #     env_name: prod
 
   integration-tests:
     name: Cypress
