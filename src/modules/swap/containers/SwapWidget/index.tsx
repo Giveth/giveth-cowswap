@@ -45,6 +45,7 @@ import SettingsTab from 'legacy/components/Settings'
 import { SwapButtonState } from 'modules/swap/helpers/getSwapButtonState'
 import { useIsEthFlow } from 'modules/swap/hooks/useIsEthFlow'
 import { useShouldZeroApproveSwap } from 'common/hooks/useShouldZeroApproveSwap'
+import DonationInput from './DonationInput'
 
 const BUTTON_STATES_TO_SHOW_BUNDLE_BANNER = [SwapButtonState.ApproveAndSwap, SwapButtonState.ExpertApproveAndSwap]
 
@@ -197,15 +198,15 @@ export function SwapWidget() {
     settingsWidget: <SettingsTab placeholderSlippage={allowedSlippage} />,
     bottomContent: (
       <>
+        {!isWrapUnwrapMode && (
+          <DonationInput>
+            <input type="checkbox" checked={isDonationEnabled} onChange={toggleDonationEnabled} />
+            <span>Donate 1% of your swap to support Public Goods!</span>
+          </DonationInput>
+        )}
         {showTradeRates && <TradeRates {...tradeRatesProps} />}
         <SwapWarningsTop {...swapWarningsTopProps} />
         <SwapButtons {...swapButtonContext} />
-        {!isWrapUnwrapMode && (
-          <label>
-            <input type="checkbox" checked={isDonationEnabled} onChange={toggleDonationEnabled} />
-            Donate 1% of swap
-          </label>
-        )}
         <SwapWarningsBottom {...swapWarningsBottomProps} />
       </>
     ),

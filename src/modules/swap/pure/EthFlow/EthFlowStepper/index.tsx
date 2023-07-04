@@ -4,7 +4,6 @@ import { Progress1 } from './steps/Progress1'
 import { Step2 } from './steps/Step2'
 import { Progress2 } from './steps/Progress2'
 import { Step3 } from './steps/Step3'
-import { Step4 } from './steps/Step4'
 import { StatusIconState } from './StatusIcon'
 import { transparentize } from 'polished'
 
@@ -132,7 +131,6 @@ export const Progress = styled.div<ProgressProps>`
 `
 
 export function EthFlowStepper(props: EthFlowStepperProps) {
-  const { donation } = props
   return (
     <Wrapper>
       <Step1 {...props} />
@@ -140,7 +138,6 @@ export function EthFlowStepper(props: EthFlowStepperProps) {
       <Step2 {...props} />
       <Progress2 {...props} />
       <Step3 {...props} />
-      {donation.enabled && <Step4 {...props} />}
     </Wrapper>
   )
 }
