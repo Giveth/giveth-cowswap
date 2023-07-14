@@ -47,6 +47,8 @@ import { useIsEthFlow } from 'modules/swap/hooks/useIsEthFlow'
 import { useShouldZeroApproveSwap } from 'common/hooks/useShouldZeroApproveSwap'
 import DonationInput from './DonationInput'
 
+import givethRaisedHands from 'legacy/assets/svg/giveth_raised_hands.svg'
+
 const BUTTON_STATES_TO_SHOW_BUNDLE_BANNER = [SwapButtonState.ApproveAndSwap, SwapButtonState.ExpertApproveAndSwap]
 
 export function SwapWidget() {
@@ -199,9 +201,12 @@ export function SwapWidget() {
     bottomContent: (
       <>
         {!isWrapUnwrapMode && (
-          <DonationInput>
-            <input type="checkbox" checked={isDonationEnabled} onChange={toggleDonationEnabled} />
-            <span>Donate 1% of your swap to support Public Goods!</span>
+          <DonationInput onClick={toggleDonationEnabled}>
+            <div>
+              <input type="checkbox" checked={isDonationEnabled} onChange={toggleDonationEnabled} />
+              <span>Donate 1% of your swap to support Public Goods!</span>
+            </div>
+            <img src={givethRaisedHands} alt="Giveth Raised Hands" />
           </DonationInput>
         )}
         {showTradeRates && <TradeRates {...tradeRatesProps} />}
