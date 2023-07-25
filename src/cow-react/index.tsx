@@ -28,6 +28,7 @@ import { createRoot } from 'react-dom/client'
 import { FortuneWidget } from 'modules/fortune/containers/FortuneWidget'
 import { FeatureGuard } from 'common/containers/FeatureGuard'
 import { WithLDProvider } from 'modules/application/containers/WithLDProvider'
+import { DonationProvider } from 'modules/swap/hooks/useDonation'
 
 // Node removeChild hackaround
 // based on: https://github.com/facebook/react/issues/11538#issuecomment-417504600
@@ -50,16 +51,18 @@ root.render(
               <Blocklist>
                 <BlockNumberProvider>
                   <WithLDProvider>
-                    <Updaters />
-                    <ThemeProvider>
-                      <ThemedGlobalStyle />
-                      <FeatureGuard featureFlag="cowFortuneEnabled">
-                        <FortuneWidget />
-                      </FeatureGuard>
-                      <Popups />
-                      <AppziButton />
-                      <App />
-                    </ThemeProvider>
+                    <DonationProvider>
+                      <Updaters />
+                      <ThemeProvider>
+                        <ThemedGlobalStyle />
+                        <FeatureGuard featureFlag="cowFortuneEnabled">
+                          <FortuneWidget />
+                        </FeatureGuard>
+                        <Popups />
+                        <AppziButton />
+                        <App />
+                      </ThemeProvider>
+                    </DonationProvider>
                   </WithLDProvider>
                 </BlockNumberProvider>
               </Blocklist>

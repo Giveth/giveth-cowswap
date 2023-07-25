@@ -12,6 +12,7 @@ import { SwapState } from './reducer'
 import TradeGp from 'legacy/state/swap/TradeGp'
 import { useNavigateOnCurrencySelection } from 'modules/trade/hooks/useNavigateOnCurrencySelection'
 import { useTradeNavigate } from 'modules/trade/hooks/useTradeNavigate'
+import { useDonation } from 'modules/swap/hooks/useDonation'
 import { changeSwapAmountAnalytics } from 'legacy/components/analytics'
 import { useIsExpertMode, useUserSlippageToleranceWithDefault } from 'legacy/state/user/hooks'
 import { FEE_SIZE_THRESHOLD, INITIAL_ALLOWED_SLIPPAGE_PERCENT } from 'legacy/constants'
@@ -236,7 +237,7 @@ function _computeUnknownPriceImpactAcceptedState({
 // from the current swap inputs, compute the best trade and return it.
 export function useDerivedSwapInfo(): DerivedSwapInfo {
   const { account, chainId } = useWalletInfo() // MOD: chainId
-
+  const { donationPercentage } = useDonation()
   const {
     independentField,
     typedValue,
@@ -262,10 +263,12 @@ export function useDerivedSwapInfo(): DerivedSwapInfo {
     [inputCurrency, isExactIn, outputCurrency, typedValue]
   )
 
-  // Calculate 1% of the parsed amount -- 1% is the default donation amount
+  // 1% is the default donation amount
   const donationAmount = useMemo(() => {
-    return parsedAmount ? parsedAmount.multiply(JSBI.BigInt(1)).divide(JSBI.BigInt(100)) : undefined
-  }, [parsedAmount])
+    return parsedAmount
+      ? parsedAmount.multiply(JSBI.BigInt(donationPercentage * 100)).divide(JSBI.BigInt(10000))
+      : undefined
+  }, [parsedAmount, donationPercentage])
 
   const currencies: { [field in Field]?: Currency | null } = useMemo(
     () => ({

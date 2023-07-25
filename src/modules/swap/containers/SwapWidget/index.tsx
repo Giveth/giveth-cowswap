@@ -22,7 +22,7 @@ import React, { useState } from 'react'
 import { useModalIsOpen } from 'legacy/state/application/hooks'
 import { ApplicationModal } from 'legacy/state/application/reducer'
 import { useSwapButtonContext } from 'modules/swap/hooks/useSwapButtonContext'
-import { useDonationToggle } from 'modules/swap/hooks/useDonationToggle'
+import { useDonation } from 'modules/swap/hooks/useDonation'
 import { ConfirmSwapModalSetupProps } from 'modules/swap/containers/ConfirmSwapModalSetup'
 import { EthFlowProps } from 'modules/swap/containers/EthFlow'
 import { SwapModals, SwapModalsProps } from 'modules/swap/containers/SwapModals'
@@ -47,8 +47,6 @@ import { useIsEthFlow } from 'modules/swap/hooks/useIsEthFlow'
 import { useShouldZeroApproveSwap } from 'common/hooks/useShouldZeroApproveSwap'
 import DonationInput from './DonationInput'
 
-import givethRaisedHands from 'legacy/assets/svg/giveth_raised_hands.svg'
-
 const BUTTON_STATES_TO_SHOW_BUNDLE_BANNER = [SwapButtonState.ApproveAndSwap, SwapButtonState.ExpertApproveAndSwap]
 
 export function SwapWidget() {
@@ -71,8 +69,7 @@ export function SwapWidget() {
   const isEthFlow = useIsEthFlow()
   const shouldZeroApprove = useShouldZeroApproveSwap()
 
-  const { isDonationEnabled, toggleDonationEnabled } = useDonationToggle()
-
+  const { isDonationEnabled } = useDonation()
   const isWrapUnwrapMode = wrapType !== WrapType.NOT_APPLICABLE
   const priceImpactParams = usePriceImpact({
     abTrade: trade,
@@ -200,15 +197,7 @@ export function SwapWidget() {
     settingsWidget: <SettingsTab placeholderSlippage={allowedSlippage} />,
     bottomContent: (
       <>
-        {!isWrapUnwrapMode && (
-          <DonationInput onClick={toggleDonationEnabled}>
-            <div>
-              <input type="checkbox" checked={isDonationEnabled} onChange={toggleDonationEnabled} />
-              <span>Donate 1% of your swap to support Public Goods!</span>
-            </div>
-            <img src={givethRaisedHands} alt="Giveth Raised Hands" />
-          </DonationInput>
-        )}
+        {!isWrapUnwrapMode && <DonationInput />}
         {showTradeRates && <TradeRates {...tradeRatesProps} />}
         <SwapWarningsTop {...swapWarningsTopProps} />
         <SwapButtons {...swapButtonContext} />
