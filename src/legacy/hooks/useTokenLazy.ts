@@ -1,17 +1,18 @@
 import { useCallback } from 'react'
 
-import { Token } from '@uniswap/sdk-core'
+import { Erc20 } from '@cowprotocol/abis'
 import { Contract } from '@ethersproject/contracts'
-
-import { useWeb3React } from '@web3-react/core'
-import { getBytes32TokenContract, getTokenContract } from 'legacy/hooks/useContract'
-import { parseStringOrBytes32 } from 'lib/hooks/useCurrency'
-import { useAddUserToken } from 'legacy/state/user/hooks'
-import { Erc20 } from 'legacy/abis/types'
-import { retry } from 'legacy/utils/retry'
 import { JsonRpcProvider } from '@ethersproject/providers'
-import { supportedChainId } from 'legacy/utils/supportedChainId'
+import { Token } from '@uniswap/sdk-core'
+import { useWeb3React } from '@web3-react/core'
+
+import { getBytes32TokenContract, getTokenContract } from 'legacy/hooks/useContract'
+import { useAddUserToken } from 'legacy/state/user/hooks'
+import { retry } from 'legacy/utils/retry'
+
 import { useWalletInfo } from 'modules/wallet'
+
+import { parseStringOrBytes32 } from 'lib/hooks/useCurrency'
 
 const contractsCache: Record<string, Erc20> = {}
 const bytes32ContractsCache: Record<string, Contract> = {}
@@ -145,9 +146,8 @@ async function _getTokenInfo(params: GetTokenInfoParams): Promise<TokenInfo | nu
  */
 export function useTokenLazy() {
   const { provider } = useWeb3React()
-  const { account, chainId: _chainId } = useWalletInfo()
+  const { account, chainId } = useWalletInfo()
   const addUserToken = useAddUserToken()
-  const chainId = supportedChainId(_chainId)
 
   return useCallback(
     async (address: string): Promise<Token | null> => {

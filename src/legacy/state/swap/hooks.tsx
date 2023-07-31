@@ -1,35 +1,43 @@
-import { useWalletInfo } from 'modules/wallet'
-import { Currency, CurrencyAmount, Percent } from '@uniswap/sdk-core'
-import { ParsedQs } from 'qs'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+
+import { SupportedChainId } from '@cowprotocol/cow-sdk'
+import { Currency, CurrencyAmount, Percent } from '@uniswap/sdk-core'
+
+import { t } from '@lingui/macro'
+import JSBI from 'jsbi'
+import { ParsedQs } from 'qs'
+
+import { changeSwapAmountAnalytics, switchTokensAnalytics } from 'legacy/components/analytics'
+import { FEE_SIZE_THRESHOLD } from 'legacy/constants'
+import { useCurrency } from 'legacy/hooks/Tokens'
+import useENS from 'legacy/hooks/useENS'
+import { PriceImpact } from 'legacy/hooks/usePriceImpact'
+import { AppState } from 'legacy/state'
 import { useAppDispatch, useAppSelector } from 'legacy/state/hooks'
+import { useGetQuoteAndStatus, useQuote } from 'legacy/state/price/hooks'
+import { stringToCurrency, useTradeExactInWithFee, useTradeExactOutWithFee } from 'legacy/state/swap/extension'
+import TradeGp from 'legacy/state/swap/TradeGp'
+import { isWrappingTrade } from 'legacy/state/swap/utils'
+import { useIsExpertMode } from 'legacy/state/user/hooks'
+import { registerOnWindow } from 'legacy/utils/misc'
+
+import { useDonation } from 'modules/swap/hooks/useDonation'
+import { useSwapSlippage } from 'modules/swap/hooks/useSwapSlippage'
+import { useCurrencyBalances } from 'modules/tokens/hooks/useCurrencyBalance'
+import { useNavigateOnCurrencySelection } from 'modules/trade/hooks/useNavigateOnCurrencySelection'
+import { useTradeNavigate } from 'modules/trade/hooks/useTradeNavigate'
+import { useWalletInfo } from 'modules/wallet'
+
+import { useIsProviderNetworkUnsupported } from 'common/hooks/useIsProviderNetworkUnsupported'
+import { useTokenBySymbolOrAddress } from 'common/hooks/useTokenBySymbolOrAddress'
+import tryParseCurrencyAmount from 'lib/utils/tryParseCurrencyAmount'
+import { formatSymbol } from 'utils/format'
+
+import { Field, setRecipient, switchCurrencies, typeInput, setWithDonation } from './actions'
+import { SwapState } from './reducer'
 
 import { TOKEN_SHORTHANDS } from '../../constants/tokens'
 import { isAddress } from '../../utils'
-import { AppState } from 'legacy/state'
-import { Field, setRecipient, setWithDonation, switchCurrencies, typeInput } from './actions'
-import { SwapState } from './reducer'
-import TradeGp from 'legacy/state/swap/TradeGp'
-import { useNavigateOnCurrencySelection } from 'modules/trade/hooks/useNavigateOnCurrencySelection'
-import { useTradeNavigate } from 'modules/trade/hooks/useTradeNavigate'
-import { useDonation } from 'modules/swap/hooks/useDonation'
-import { changeSwapAmountAnalytics } from 'legacy/components/analytics'
-import { useIsExpertMode, useUserSlippageToleranceWithDefault } from 'legacy/state/user/hooks'
-import { FEE_SIZE_THRESHOLD, INITIAL_ALLOWED_SLIPPAGE_PERCENT } from 'legacy/constants'
-import { PriceImpact } from 'legacy/hooks/usePriceImpact'
-import { useTokenBySymbolOrAddress } from 'common/hooks/useTokenBySymbolOrAddress'
-import useENS from 'legacy/hooks/useENS'
-import { useCurrencyBalances } from 'modules/tokens/hooks/useCurrencyBalance'
-import tryParseCurrencyAmount from 'lib/utils/tryParseCurrencyAmount'
-import { useGetQuoteAndStatus, useQuote } from 'legacy/state/price/hooks'
-import { isWrappingTrade } from 'legacy/state/swap/utils'
-import { stringToCurrency, useTradeExactInWithFee, useTradeExactOutWithFee } from 'legacy/state/swap/extension'
-import { registerOnWindow } from 'legacy/utils/misc'
-import { t } from '@lingui/macro'
-import { formatSymbol } from 'utils/format'
-import { SupportedChainId } from '@cowprotocol/cow-sdk'
-import { useCurrency } from 'legacy/hooks/Tokens'
-import JSBI from 'jsbi'
 
 export const BAD_RECIPIENT_ADDRESSES: { [address: string]: true } = {
   '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f': true, // v2 factory
@@ -68,7 +76,15 @@ export function validatedRecipient(recipient: any): string | null {
 }
 
 export function useSwapState(): AppState['swap'] {
-  return useAppSelector((state) => state.swap)
+  const isProviderNetworkUnsupported = useIsProviderNetworkUnsupported()
+
+  const state = useAppSelector((state) => state.swap)
+
+  return useMemo(() => {
+    return isProviderNetworkUnsupported
+      ? { ...state, [Field.INPUT]: { currencyId: undefined }, [Field.OUTPUT]: { currencyId: undefined } }
+      : state
+  }, [isProviderNetworkUnsupported, state])
 }
 
 export type Currencies = { [field in Field]?: Currency | null }
@@ -87,6 +103,8 @@ interface DerivedSwapInfo {
   currencyBalances: { [field in Field]?: CurrencyAmount<Currency> }
   parsedAmount: CurrencyAmount<Currency> | undefined
   donationAmount?: CurrencyAmount<Currency> | undefined
+  // TODO: remove duplications of the value (v2Trade?.maximumAmountIn(allowedSlippage))
+  slippageAdjustedSellAmount: CurrencyAmount<Currency> | null
   inputError?: string
   v2Trade: TradeGp | undefined
   allowedSlippage: Percent
@@ -105,6 +123,7 @@ export function useSwapActionHandlers(): SwapActions {
 
     navigate(chainId, { inputCurrencyId: outputCurrencyId, outputCurrencyId: inputCurrencyId })
     dispatch(switchCurrencies())
+    switchTokensAnalytics()
   }, [swapState, navigate, chainId, dispatch])
 
   const onUserInput = useCallback(
@@ -332,7 +351,8 @@ export function useDerivedSwapInfo(): DerivedSwapInfo {
   // TODO: check whether we want to enable auto slippage tolerance
   // const autoSlippageTolerance = useAutoSlippageTolerance(trade.trade)  // mod
   // const allowedSlippage = useUserSlippageToleranceWithDefault(autoSlippageTolerance) // mod
-  const allowedSlippage = useUserSlippageToleranceWithDefault(INITIAL_ALLOWED_SLIPPAGE_PERCENT) // mod
+  const allowedSlippage = useSwapSlippage()
+  const slippageAdjustedSellAmount = v2Trade?.maximumAmountIn(allowedSlippage) || null
 
   const inputError = useMemo(() => {
     let inputError: string | undefined
@@ -360,7 +380,8 @@ export function useDerivedSwapInfo(): DerivedSwapInfo {
 
     // compare input balance to max input based on version
     // const [balanceIn, amountIn] = [currencyBalances[Field.INPUT], trade.trade?.maximumAmountIn(allowedSlippage)] // mod
-    const [balanceIn, amountIn] = [currencyBalances[Field.INPUT], v2Trade?.maximumAmountIn(allowedSlippage)] // mod
+    const balanceIn = currencyBalances[Field.INPUT]
+    const amountIn = slippageAdjustedSellAmount
     const totalAmount = withDonation && donationAmount && amountIn ? amountIn.add(donationAmount) : amountIn
 
     // Balance not loaded - fix for https://github.com/cowprotocol/cowswap/issues/451
@@ -373,7 +394,17 @@ export function useDerivedSwapInfo(): DerivedSwapInfo {
     }
 
     return inputError
-  }, [account, allowedSlippage, currencies, currencyBalances, inputCurrency, parsedAmount, to, v2Trade]) // mod
+  }, [
+    account,
+    slippageAdjustedSellAmount,
+    currencies,
+    currencyBalances,
+    inputCurrency,
+    parsedAmount,
+    to,
+    donationAmount,
+    withDonation,
+  ]) // mod
 
   return useMemo(
     () => {
@@ -386,6 +417,7 @@ export function useDerivedSwapInfo(): DerivedSwapInfo {
         inputError,
         v2Trade: v2Trade || undefined, // mod
         allowedSlippage,
+        slippageAdjustedSellAmount: slippageAdjustedSellAmount,
       }
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -396,7 +428,9 @@ export function useDerivedSwapInfo(): DerivedSwapInfo {
       inputError,
       parsedAmount,
       donationAmount,
+      // eslint-disable-next-line react-hooks/exhaustive-deps
       JSON.stringify(v2Trade),
+      slippageAdjustedSellAmount,
     ] // mod
   )
 }
@@ -420,6 +454,7 @@ export function queryParametersToSwapState(
   }
 
   const recipient = validatedRecipient(parsedQs.recipient)
+  const recipientAddress = validatedRecipient(parsedQs.recipientAddress)
 
   return {
     chainId: chainId || null,
@@ -433,6 +468,7 @@ export function queryParametersToSwapState(
     independentField,
     recipient,
     withDonation: !!parsedQs.withDonation,
+    recipientAddress,
   }
 }
 

@@ -1,16 +1,20 @@
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useSetAtom } from 'jotai'
 import { useCallback, useLayoutEffect, useMemo } from 'react'
-import { useUpdateAtom } from 'jotai/utils'
-import { LimitOrdersRawState, updateLimitOrdersRawStateAtom } from 'modules/limitOrders'
-import { Writeable } from 'types'
-import { FractionUtils } from 'utils/fractionUtils'
-import { Price } from '@uniswap/sdk-core'
-import tryParseCurrencyAmount from 'lib/utils/tryParseCurrencyAmount'
-import { useLimitOrdersDerivedState } from 'modules/limitOrders/hooks/useLimitOrdersDerivedState'
-import { TRADE_URL_BUY_AMOUNT_KEY, TRADE_URL_SELL_AMOUNT_KEY } from 'modules/trade/const/tradeUrl'
-import { getIntOrFloat } from 'utils/getIntOrFloat'
+
 import { OrderKind } from '@cowprotocol/cow-sdk'
+import { Price } from '@uniswap/sdk-core'
+
+import { useLocation, useNavigate } from 'react-router-dom'
+import { Writeable } from 'types'
+
+import { LimitOrdersRawState, updateLimitOrdersRawStateAtom } from 'modules/limitOrders'
+import { useLimitOrdersDerivedState } from 'modules/limitOrders/hooks/useLimitOrdersDerivedState'
 import { useUpdateActiveRate } from 'modules/limitOrders/hooks/useUpdateActiveRate'
+import { TRADE_URL_BUY_AMOUNT_KEY, TRADE_URL_SELL_AMOUNT_KEY } from 'modules/trade/const/tradeUrl'
+
+import tryParseCurrencyAmount from 'lib/utils/tryParseCurrencyAmount'
+import { FractionUtils } from 'utils/fractionUtils'
+import { getIntOrFloat } from 'utils/getIntOrFloat'
 
 /**
  * Parse sell/buy amount from URL and apply to Limit orders widget
@@ -23,7 +27,7 @@ export function useSetupLimitOrderAmountsFromUrl() {
   const navigate = useNavigate()
   const { search, pathname } = useLocation()
   const params = useMemo(() => new URLSearchParams(search), [search])
-  const updateLimitOrdersState = useUpdateAtom(updateLimitOrdersRawStateAtom)
+  const updateLimitOrdersState = useSetAtom(updateLimitOrdersRawStateAtom)
   const updateRate = useUpdateActiveRate()
   const { inputCurrency, outputCurrency } = useLimitOrdersDerivedState()
 

@@ -1,17 +1,19 @@
-import { BoxProps } from 'rebass'
-import TradeGp from 'legacy/state/swap/TradeGp'
 import { Currency, CurrencyAmount, Percent } from '@uniswap/sdk-core'
+
+import { BoxProps } from 'rebass'
+
+import { MouseoverTooltipContent } from 'legacy/components/Tooltip'
 import { INITIAL_ALLOWED_SLIPPAGE_PERCENT } from 'legacy/constants'
 import { useHigherUSDValue } from 'legacy/hooks/useStablecoinPrice'
-import { LowerSectionWrapper } from 'modules/swap/pure/styled'
+import TradeGp from 'legacy/state/swap/TradeGp'
+
 import { RowFee } from 'modules/swap/containers/Row/RowFee'
-import { RowSlippage } from 'modules/swap/containers/Row/RowSlippage'
 import { RowReceivedAfterSlippage } from 'modules/swap/containers/Row/RowReceivedAfterSlippage'
-import { useIsEthFlow } from 'modules/swap/hooks/useIsEthFlow'
-import { useIsWrapOrUnwrap } from 'modules/trade/hooks/useIsWrapOrUnwrap'
+import { RowSlippage } from 'modules/swap/containers/Row/RowSlippage'
+import { useIsEoaEthFlow } from 'modules/swap/hooks/useIsEoaEthFlow'
 import { StyledRowBetween, TextWrapper } from 'modules/swap/pure/Row/styled'
-import { MouseoverTooltipContent } from 'legacy/components/Tooltip'
-import { StyledInfoIcon } from 'modules/swap/pure/styled'
+import { LowerSectionWrapper, StyledInfoIcon } from 'modules/swap/pure/styled'
+import { useIsWrapOrUnwrap } from 'modules/trade/hooks/useIsWrapOrUnwrap'
 
 interface TradeBasicDetailsProp extends BoxProps {
   allowedSlippage: Percent | string
@@ -41,12 +43,13 @@ export function TradeBasicDetails(props: TradeBasicDetailsProp) {
   // trades are null when there is a fee quote error e.g
   // so we can take both
   const feeFiatValue = useHigherUSDValue(trade?.fee.feeAsCurrency || fee)
-  const isEthFlow = useIsEthFlow()
+  const isEoaEthFlow = useIsEoaEthFlow()
   const isWrapOrUnwrap = useIsWrapOrUnwrap()
 
   const showRowFee = trade || fee
   const showRowSlippage =
-    (isEthFlow || isExpertMode || !allowedSlippagePercent.equalTo(INITIAL_ALLOWED_SLIPPAGE_PERCENT)) && !isWrapOrUnwrap
+    (isEoaEthFlow || isExpertMode || !allowedSlippagePercent.equalTo(INITIAL_ALLOWED_SLIPPAGE_PERCENT)) &&
+    !isWrapOrUnwrap
   const showRowReceivedAfterSlippage = isExpertMode && trade
   return (
     <LowerSectionWrapper {...boxProps}>

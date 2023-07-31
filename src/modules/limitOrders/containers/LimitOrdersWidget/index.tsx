@@ -1,40 +1,63 @@
-import * as styledEl from './styled'
-import { Field } from 'legacy/state/swap/actions'
-import React, { useMemo, useState } from 'react'
-import { CurrencyInfo } from 'common/pure/CurrencyInputPanel/types'
-import { useFillLimitOrdersDerivedState, useLimitOrdersDerivedState } from '../../hooks/useLimitOrdersDerivedState'
-import { updateLimitOrdersRawStateAtom } from '../../state/limitOrdersRawStateAtom'
-import { useAtomValue, useUpdateAtom } from 'jotai/utils'
-import { SettingsWidget } from '../SettingsWidget'
-import { limitOrdersSettingsAtom } from '../../state/limitOrdersSettingsAtom'
-import { RateInput } from '../RateInput'
-import { DeadlineInput } from '../DeadlineInput'
-import { LimitOrdersConfirmModal } from '../LimitOrdersConfirmModal'
-import { useTradeFlowContext } from '../../hooks/useTradeFlowContext'
-import { useIsSellOrder } from '../../hooks/useIsSellOrder'
-import { TradeButtons } from 'modules/limitOrders/containers/TradeButtons'
-import { TradeApproveWidget } from 'common/containers/TradeApprove/TradeApproveWidget'
-import { useSetupTradeState } from 'modules/trade'
-import { ImportTokenModal } from 'modules/trade/containers/ImportTokenModal'
-import { useOnImportDismiss } from 'modules/trade/hooks/useOnImportDismiss'
-import { limitRateAtom } from '../../state/limitRateAtom'
-import { useDisableNativeTokenSelling } from 'modules/limitOrders/hooks/useDisableNativeTokenSelling'
-import { UnlockLimitOrders } from '../../pure/UnlockLimitOrders'
-import { LimitOrdersWarnings } from 'modules/limitOrders/containers/LimitOrdersWarnings'
-import { useLimitOrdersPriceImpactParams } from 'modules/limitOrders/hooks/useLimitOrdersPriceImpactParams'
+import { useAtom } from 'jotai'
+import { useAtomValue, useSetAtom } from 'jotai'
+import React, { useMemo } from 'react'
+
 import { OrderKind } from '@cowprotocol/cow-sdk'
-import { useWalletInfo } from 'modules/wallet'
-import { LimitOrdersProps, limitOrdersPropsChecker } from './limitOrdersPropsChecker'
+
+import { Field } from 'legacy/state/swap/actions'
+
+import { LimitOrdersWarnings } from 'modules/limitOrders/containers/LimitOrdersWarnings'
+import { useLimitOrdersWidgetActions } from 'modules/limitOrders/containers/LimitOrdersWidget/hooks/useLimitOrdersWidgetActions'
+import { TradeButtons } from 'modules/limitOrders/containers/TradeButtons'
 import { useSetupLimitOrderAmountsFromUrl } from 'modules/limitOrders/hooks/useSetupLimitOrderAmountsFromUrl'
 import { InfoBanner } from 'modules/limitOrders/pure/InfoBanner'
 import { partiallyFillableOverrideAtom } from 'modules/limitOrders/state/partiallyFillableOverride'
-import { useAtom } from 'jotai'
-import { useFeatureFlags } from 'common/hooks/useFeatureFlags'
-import { TradeWidget } from 'modules/trade/containers/TradeWidget'
-import usePriceImpact from 'legacy/hooks/usePriceImpact'
+import { TradeWidget, useSetupTradeState, useTradePriceImpact } from 'modules/trade'
+import { useDisableNativeTokenSelling } from 'modules/trade/hooks/useDisableNativeTokenSelling'
+import { BulletListItem, UnlockWidgetScreen } from 'modules/trade/pure/UnlockWidgetScreen'
+import { useSetTradeQuoteParams, useTradeQuote } from 'modules/tradeQuote'
+
+import { useFeatureFlags } from 'common/hooks/featureFlags/useFeatureFlags'
 import { useRateInfoParams } from 'common/hooks/useRateInfoParams'
-import { useLimitOrdersWidgetActions } from 'modules/limitOrders/containers/LimitOrdersWidget/hooks/useLimitOrdersWidgetActions'
-import { useIsWrapOrUnwrap } from 'modules/trade/hooks/useIsWrapOrUnwrap'
+import { CurrencyInfo } from 'common/pure/CurrencyInputPanel/types'
+
+import { LimitOrdersProps, limitOrdersPropsChecker } from './limitOrdersPropsChecker'
+import * as styledEl from './styled'
+
+import { useIsSellOrder } from '../../hooks/useIsSellOrder'
+import { useFillLimitOrdersDerivedState, useLimitOrdersDerivedState } from '../../hooks/useLimitOrdersDerivedState'
+import { useTradeFlowContext } from '../../hooks/useTradeFlowContext'
+import { updateLimitOrdersRawStateAtom } from '../../state/limitOrdersRawStateAtom'
+import { limitOrdersSettingsAtom } from '../../state/limitOrdersSettingsAtom'
+import { limitRateAtom } from '../../state/limitRateAtom'
+import { DeadlineInput } from '../DeadlineInput'
+import { LimitOrdersConfirmModal } from '../LimitOrdersConfirmModal'
+import { RateInput } from '../RateInput'
+import { SettingsWidget } from '../SettingsWidget'
+
+export const LIMIT_BULLET_LIST_CONTENT: BulletListItem[] = [
+  { content: 'Set any limit price and time horizon' },
+  { content: 'FREE order placement and cancellation' },
+  { content: 'Place multiple orders using the same balance' },
+  { content: 'Always receive 100% of your order surplus' },
+  { content: 'Protection from MEV by default' },
+  {
+    content: (
+      <span>
+        NOW with&nbsp;<b>partial fills</b>&nbsp;support!
+      </span>
+    ),
+  },
+]
+
+const UNLOCK_SCREEN = {
+  title: 'Want to try out limit orders?',
+  subtitle: 'Get started!',
+  orderType: 'partially fillable',
+  buttonText: 'Get started with limit orders',
+  buttonLink:
+    'https://medium.com/@cow-protocol/cow-swap-improves-the-limit-order-experience-with-partially-fillable-limit-orders-45f19143e87d',
+}
 
 export function LimitOrdersWidget() {
   useSetupTradeState()
@@ -42,7 +65,6 @@ export function LimitOrdersWidget() {
   useDisableNativeTokenSelling()
   useFillLimitOrdersDerivedState()
 
-  const { chainId } = useWalletInfo()
   const {
     inputCurrency,
     outputCurrency,
@@ -56,32 +78,29 @@ export function LimitOrdersWidget() {
     isUnlocked,
     orderKind,
   } = useLimitOrdersDerivedState()
-  const onImportDismiss = useOnImportDismiss()
   const settingsState = useAtomValue(limitOrdersSettingsAtom)
   const isSellOrder = useIsSellOrder()
   const tradeContext = useTradeFlowContext()
-  const { isLoading: isRateLoading, feeAmount } = useAtomValue(limitRateAtom)
+  const { feeAmount } = useAtomValue(limitRateAtom)
+  const { isLoading: isRateLoading } = useTradeQuote()
   const rateInfoParams = useRateInfoParams(inputCurrencyAmount, outputCurrencyAmount)
-  const isWrapOrUnwrap = useIsWrapOrUnwrap()
   const partiallyFillableOverride = useAtom(partiallyFillableOverrideAtom)
   const { partialFillsEnabled } = useFeatureFlags()
   const widgetActions = useLimitOrdersWidgetActions()
 
-  const showRecipient = useMemo(
-    () => !isWrapOrUnwrap && settingsState.showRecipient,
-    [settingsState.showRecipient, isWrapOrUnwrap]
+  const { showRecipient, expertMode: isExpertMode } = settingsState
+
+  const priceImpact = useTradePriceImpact()
+  const quoteAmount = useMemo(
+    () => (orderKind === OrderKind.SELL ? inputCurrencyAmount : outputCurrencyAmount),
+    [orderKind, inputCurrencyAmount, outputCurrencyAmount]
   )
 
-  const isExpertMode = useMemo(
-    () => !isWrapOrUnwrap && settingsState.expertMode,
-    [isWrapOrUnwrap, settingsState.expertMode]
-  )
-
-  const priceImpact = usePriceImpact(useLimitOrdersPriceImpactParams())
+  useSetTradeQuoteParams(quoteAmount)
 
   const inputCurrencyInfo: CurrencyInfo = {
     field: Field.INPUT,
-    label: isWrapOrUnwrap ? undefined : isSellOrder ? 'You sell' : 'You sell at most',
+    label: isSellOrder ? 'You sell' : 'You sell at most',
     currency: inputCurrency,
     amount: inputCurrencyAmount,
     isIndependent: orderKind === OrderKind.SELL,
@@ -91,9 +110,9 @@ export function LimitOrdersWidget() {
   }
   const outputCurrencyInfo: CurrencyInfo = {
     field: Field.OUTPUT,
-    label: isWrapOrUnwrap ? undefined : isSellOrder ? 'You receive at least' : 'You receive exactly',
+    label: isSellOrder ? 'You receive at least' : 'You receive exactly',
     currency: outputCurrency,
-    amount: isWrapOrUnwrap ? inputCurrencyAmount : outputCurrencyAmount,
+    amount: outputCurrencyAmount,
     isIndependent: orderKind === OrderKind.BUY,
     balance: outputCurrencyBalance,
     fiatAmount: outputCurrencyFiatAmount,
@@ -105,12 +124,9 @@ export function LimitOrdersWidget() {
     outputCurrencyInfo,
     isUnlocked,
     isRateLoading,
-    isWrapOrUnwrap,
     showRecipient,
     isExpertMode,
     recipient,
-    chainId,
-    onImportDismiss,
     partiallyFillableOverride,
     featurePartialFillsEnabled: partialFillsEnabled,
     rateInfoParams,
@@ -129,13 +145,10 @@ const LimitOrders = React.memo((props: LimitOrdersProps) => {
     inputCurrencyInfo,
     outputCurrencyInfo,
     isUnlocked,
-    chainId,
     isRateLoading,
     widgetActions,
-    onImportDismiss,
     partiallyFillableOverride,
     featurePartialFillsEnabled,
-    isWrapOrUnwrap,
     showRecipient,
     isExpertMode,
     recipient,
@@ -150,22 +163,44 @@ const LimitOrders = React.memo((props: LimitOrdersProps) => {
   const outputCurrency = outputCurrencyInfo.currency
 
   const isTradePriceUpdating = useMemo(() => {
-    if (isWrapOrUnwrap || !inputCurrency || !outputCurrency) return false
+    if (!inputCurrency || !outputCurrency) return false
 
     return isRateLoading
-  }, [isRateLoading, isWrapOrUnwrap, inputCurrency, outputCurrency])
+  }, [isRateLoading, inputCurrency, outputCurrency])
 
   const isPartiallyFillable = featurePartialFillsEnabled && settingsState.partialFillsEnabled
 
-  const [showConfirmation, setShowConfirmation] = useState(false)
-  const updateLimitOrdersState = useUpdateAtom(updateLimitOrdersRawStateAtom)
+  const updateLimitOrdersState = useSetAtom(updateLimitOrdersRawStateAtom)
+
+  const inputCurrencyPreviewInfo = {
+    amount: inputCurrencyInfo.amount,
+    fiatAmount: inputCurrencyInfo.fiatAmount,
+    balance: inputCurrencyInfo.balance,
+    label: inputCurrencyInfo.label,
+  }
+
+  const outputCurrencyPreviewInfo = {
+    amount: outputCurrencyInfo.amount,
+    fiatAmount: outputCurrencyInfo.fiatAmount,
+    balance: outputCurrencyInfo.balance,
+    label: outputCurrencyInfo.label,
+  }
 
   console.debug('RENDER LIMIT ORDERS WIDGET', { inputCurrencyInfo, outputCurrencyInfo })
 
   const slots = {
     settingsWidget: <SettingsWidget />,
     lockScreen: isUnlocked ? undefined : (
-      <UnlockLimitOrders handleUnlock={() => updateLimitOrdersState({ isUnlocked: true })} />
+      <UnlockWidgetScreen
+        id="limit-orders"
+        items={LIMIT_BULLET_LIST_CONTENT}
+        buttonLink={UNLOCK_SCREEN.buttonLink}
+        title={UNLOCK_SCREEN.title}
+        subtitle={UNLOCK_SCREEN.subtitle}
+        orderType={UNLOCK_SCREEN.orderType}
+        buttonText={UNLOCK_SCREEN.buttonText}
+        handleUnlock={() => updateLimitOrdersState({ isUnlocked: true })}
+      />
     ),
     middleContent: (
       <styledEl.RateWrapper>
@@ -175,11 +210,9 @@ const LimitOrders = React.memo((props: LimitOrdersProps) => {
     ),
     bottomContent: (
       <>
-        {!isWrapOrUnwrap && (
-          <styledEl.FooterBox>
-            <styledEl.StyledRateInfo rateInfoParams={rateInfoParams} />
-          </styledEl.FooterBox>
-        )}
+        <styledEl.FooterBox>
+          <styledEl.StyledRateInfo rateInfoParams={rateInfoParams} />
+        </styledEl.FooterBox>
 
         {isExpertMode && (
           <styledEl.FooterBox>
@@ -191,15 +224,10 @@ const LimitOrders = React.memo((props: LimitOrdersProps) => {
           </styledEl.FooterBox>
         )}
 
-        {!isWrapOrUnwrap && <LimitOrdersWarnings priceImpact={priceImpact} feeAmount={feeAmount} />}
+        <LimitOrdersWarnings priceImpact={priceImpact} feeAmount={feeAmount} />
 
         <styledEl.TradeButtonBox>
-          <TradeButtons
-            inputCurrencyAmount={inputCurrencyInfo.amount}
-            tradeContext={tradeContext}
-            priceImpact={priceImpact}
-            openConfirmScreen={() => setShowConfirmation(true)}
-          />
+          <TradeButtons tradeContext={tradeContext} priceImpact={priceImpact} />
         </styledEl.TradeButtonBox>
       </>
     ),
@@ -208,6 +236,7 @@ const LimitOrders = React.memo((props: LimitOrdersProps) => {
   const params = {
     disableNonToken: false,
     compactView: false,
+    isExpertMode,
     recipient,
     showRecipient,
     isTradePriceUpdating,
@@ -224,18 +253,14 @@ const LimitOrders = React.memo((props: LimitOrdersProps) => {
         inputCurrencyInfo={inputCurrencyInfo}
         outputCurrencyInfo={outputCurrencyInfo}
       />
-      <TradeApproveWidget />
       {tradeContext && (
         <LimitOrdersConfirmModal
-          isOpen={showConfirmation}
           tradeContext={tradeContext}
           priceImpact={priceImpact}
-          inputCurrencyInfo={inputCurrencyInfo}
-          outputCurrencyInfo={outputCurrencyInfo}
-          onDismiss={() => setShowConfirmation(false)}
+          inputCurrencyInfo={inputCurrencyPreviewInfo}
+          outputCurrencyInfo={outputCurrencyPreviewInfo}
         />
       )}
-      {chainId && <ImportTokenModal chainId={chainId} onDismiss={onImportDismiss} />}
       {isUnlocked && <InfoBanner />}
     </>
   )

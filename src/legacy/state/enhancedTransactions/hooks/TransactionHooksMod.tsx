@@ -1,6 +1,9 @@
-import { useWalletInfo } from 'modules/wallet'
 import { useMemo } from 'react'
+
 import { useAppSelector } from 'legacy/state/hooks'
+
+import { useWalletInfo } from 'modules/wallet'
+
 import { EnhancedTransactionDetails } from '../reducer'
 
 // returns all the transactions for the current chain
@@ -10,14 +13,6 @@ export function useAllTransactions(): { [txHash: string]: EnhancedTransactionDet
   const state = useAppSelector((state) => state.transactions)
 
   return chainId ? state[chainId] ?? {} : {}
-}
-
-export function useIsTransactionPending(transactionHash?: string): boolean {
-  const transactions = useAllTransactions()
-
-  if (!transactionHash || !transactions[transactionHash]) return false
-
-  return !transactions[transactionHash].receipt
 }
 
 /**

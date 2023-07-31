@@ -1,17 +1,19 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { useWeb3React } from '@web3-react/core'
+
+import { OrderClass, SupportedChainId } from '@cowprotocol/cow-sdk'
 import { Token } from '@uniswap/sdk-core'
 
 import useIsWindowVisible from 'legacy/hooks/useIsWindowVisible'
-import { supportedChainId } from 'legacy/utils/supportedChainId'
-import { useCombinedPendingOrders } from 'legacy/state/orders/hooks'
-import { UpdateSpotPriceAtom, updateSpotPricesAtom } from 'modules/orders/state/spotPricesAtom'
-import { useUpdateAtom } from 'legacy/state/application/atoms'
+import { useSetAtom } from 'legacy/state/application/atoms'
 import { SPOT_PRICE_CHECK_POLL_INTERVAL } from 'legacy/state/orders/consts'
+import { useCombinedPendingOrders } from 'legacy/state/orders/hooks'
+
 import { requestPrice } from 'modules/limitOrders/hooks/useGetInitialPrice'
+import { UpdateSpotPriceAtom, updateSpotPricesAtom } from 'modules/orders/state/spotPricesAtom'
+import { useWalletInfo } from 'modules/wallet'
+
 import { useSafeMemo } from 'common/hooks/useSafeMemo'
 import { getCanonicalMarketChainKey } from 'common/utils/markets'
-import { SupportedChainId } from '@cowprotocol/cow-sdk'
 import { FractionUtils } from 'utils/fractionUtils'
 
 type MarketRecord = Record<
@@ -23,26 +25,28 @@ type MarketRecord = Record<
   }
 >
 
-function useMarkets(chainId?: SupportedChainId): MarketRecord {
+function useMarkets(chainId: SupportedChainId): MarketRecord {
   const pending = useCombinedPendingOrders({ chainId })
 
   return useSafeMemo(() => {
     return pending.reduce<Record<string, { chainId: number; inputCurrency: Token; outputCurrency: Token }>>(
       (acc, order) => {
-        if (chainId) {
-          // Aggregating pending orders per market. No need to query multiple times same market
-          const { marketInverted, marketKey } = getCanonicalMarketChainKey(chainId, order.sellToken, order.buyToken)
+        // Query spot prices only for Limit orders
+        if (order.class !== OrderClass.LIMIT) return acc
 
-          const [inputCurrency, outputCurrency] = marketInverted
-            ? [order.outputToken, order.inputToken]
-            : [order.inputToken, order.outputToken]
+        // Aggregating pending orders per market. No need to query multiple times same market
+        const { marketInverted, marketKey } = getCanonicalMarketChainKey(chainId, order.sellToken, order.buyToken)
 
-          acc[marketKey] = {
-            chainId,
-            inputCurrency,
-            outputCurrency,
-          }
+        const [inputCurrency, outputCurrency] = marketInverted
+          ? [order.outputToken, order.inputToken]
+          : [order.inputToken, order.outputToken]
+
+        acc[marketKey] = {
+          chainId,
+          inputCurrency,
+          outputCurrency,
         }
+
         return acc
       },
       {}
@@ -104,17 +108,17 @@ function useUpdatePending(props: UseUpdatePendingProps) {
 }
 
 /**
+ * TODO: move this updater to modules/orders
  * Spot Prices Updater
  *
  * Goes over all pending LIMIT orders and aggregates all markets
  * Queries the spot price for given markets at every SPOT_PRICE_CHECK_POLL_INTERVAL
  */
 export function SpotPricesUpdater(): null {
-  const { chainId: _chainId } = useWeb3React()
-  const chainId = supportedChainId(_chainId)
+  const { chainId } = useWalletInfo()
 
   const isWindowVisible = useIsWindowVisible()
-  const updateSpotPrices = useUpdateAtom(updateSpotPricesAtom)
+  const updateSpotPrices = useSetAtom(updateSpotPricesAtom)
   const markets = useMarkets(chainId)
   const isUpdating = useRef(false) // TODO: Implement using SWR or retry/cancellable promises
   const updatePending = useUpdatePending({ isUpdating, markets, updateSpotPrices })

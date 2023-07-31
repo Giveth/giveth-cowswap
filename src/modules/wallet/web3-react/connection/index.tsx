@@ -1,41 +1,51 @@
+import { SupportedChainId } from '@cowprotocol/cow-sdk'
 import { Connector } from '@web3-react/types'
 
-import { /* isChrome, */ isMobile } from 'legacy/utils/userAgent'
 import { ALL_SUPPORTED_CHAIN_IDS } from 'legacy/constants/chains'
-import { SupportedChainId } from '@cowprotocol/cow-sdk'
+import { isMobile } from 'legacy/utils/userAgent'
+
 import { getIsCoinbaseWallet, getIsInjected, getIsMetaMask } from 'modules/wallet/api/utils/connection'
 
-import { Web3ReactConnection } from '../types'
-import { ConnectionType } from '../../api/types'
+import { FeatureGuard } from 'common/containers/FeatureGuard'
 
-import { CoinbaseWalletOption } from './coinbase'
-import { InjectedOption, InstallMetaMaskOption, MetaMaskOption, OpenMetaMaskMobileOption } from './injected'
-import { WalletConnectOption } from './walletConnect'
-import { gnosisSafeConnection } from './safe'
-import { injectedConnection } from './injected'
-import { coinbaseWalletConnection } from './coinbase'
-import { walletConnectConnection } from './walletConnect'
-import { ledgerConnection, LedgerOption } from './ledger'
-import { fortmaticConnection } from './formatic'
-import { networkConnection } from './network'
-import { ZengoOption } from './zengo'
-import { AmbireOption } from './ambire'
 import { AlphaOption } from './alpha'
-import { tallyWalletConnection /* TallyWalletOption */ } from './tally'
-import { trustWalletConnection, TrustWalletOption } from './trust'
+import { AmbireOption } from './ambire'
+import { coinbaseWalletConnection, CoinbaseWalletOption } from './coinbase'
+import { fortmaticConnection } from './formatic'
+import {
+  injectedConnection,
+  InjectedOption,
+  InstallMetaMaskOption,
+  MetaMaskOption,
+  OpenMetaMaskMobileOption,
+} from './injected'
+import { injectedWidgetConnection } from './injectedWidget'
 import { InstallKeystoneOption, keystoneConnection, KeystoneOption } from './keystone'
+import { ledgerConnection, LedgerOption } from './ledger'
+import { networkConnection } from './network'
+import { gnosisSafeConnection } from './safe'
+import { tallyWalletConnection } from './tally'
+import { trustWalletConnection, TrustWalletOption } from './trust'
+import { walletConnectConnection, WalletConnectOption } from './walletConnect'
+import { walletConnectConnectionV2, WalletConnectV2Option } from './walletConnectV2'
+
+// import { ZengoOption } from './zengo'
+import { ConnectionType } from '../../api/types'
+import { Web3ReactConnection } from '../types'
 
 const CONNECTIONS: Web3ReactConnection[] = [
   gnosisSafeConnection,
   injectedConnection,
   coinbaseWalletConnection,
   walletConnectConnection,
+  walletConnectConnectionV2,
   fortmaticConnection,
   networkConnection,
   tallyWalletConnection,
   trustWalletConnection,
   ledgerConnection,
   keystoneConnection,
+  injectedWidgetConnection,
 ]
 
 export function isChainAllowed(connector: Connector, chainId: number) {
@@ -49,8 +59,10 @@ export function isChainAllowed(connector: Connector, chainId: number) {
     case gnosisSafeConnection.connector:
     case tallyWalletConnection.connector:
     case trustWalletConnection.connector:
+    case injectedWidgetConnection.connector:
     case ledgerConnection.connector:
     case keystoneConnection.connector:
+    case walletConnectConnectionV2.connector:
       return ALL_SUPPORTED_CHAIN_IDS.includes(chainId)
     default:
       return false
@@ -72,6 +84,8 @@ export function getWeb3ReactConnection(c: Connector | ConnectionType): Web3React
         return coinbaseWalletConnection
       case ConnectionType.WALLET_CONNECT:
         return walletConnectConnection
+      case ConnectionType.WALLET_CONNECT_V2:
+        return walletConnectConnectionV2
       case ConnectionType.ZENGO:
         return walletConnectConnection
       case ConnectionType.FORTMATIC:
@@ -92,6 +106,8 @@ export function getWeb3ReactConnection(c: Connector | ConnectionType): Web3React
         return ledgerConnection
       case ConnectionType.KEYSTONE:
         return keystoneConnection
+      case ConnectionType.INJECTED_WIDGET:
+        return injectedWidgetConnection
     }
   }
 }
@@ -132,8 +148,11 @@ export function ConnectWalletOptions({ tryActivation }: { tryActivation: TryActi
   const walletConnectionOption =
     (!isInjectedMobileBrowser && <WalletConnectOption tryActivation={tryActivation} />) ?? null
 
+  const walletConnectionV2Option =
+    (!isInjectedMobileBrowser && <WalletConnectV2Option tryActivation={tryActivation} />) ?? null
+
   // Wallet-connect based
-  const zengoOption = (!isInjectedMobileBrowser && <ZengoOption tryActivation={tryActivation} />) ?? null
+  // const zengoOption = (!isInjectedMobileBrowser && <ZengoOption tryActivation={tryActivation} />) ?? null
   const ambireOption = (!isInjectedMobileBrowser && <AmbireOption tryActivation={tryActivation} />) ?? null
   const alphaOption = (!isInjectedMobileBrowser && <AlphaOption tryActivation={tryActivation} />) ?? null
   const ledgerOption = (!isInjectedMobileBrowser && !isMobile && <LedgerOption tryActivation={tryActivation} />) ?? null
@@ -147,10 +166,11 @@ export function ConnectWalletOptions({ tryActivation }: { tryActivation: TryActi
   return (
     <>
       {injectedOption}
-      {walletConnectionOption}
+      <FeatureGuard featureFlag="walletConnectV1Enabled">{walletConnectionOption}</FeatureGuard>
+      <FeatureGuard featureFlag="walletConnectV2Enabled">{walletConnectionV2Option}</FeatureGuard>
       {coinbaseWalletOption}
       {ledgerOption}
-      {zengoOption}
+      {/*{zengoOption}*/}
       {ambireOption}
       {alphaOption}
       {/* {tallyOption} */}

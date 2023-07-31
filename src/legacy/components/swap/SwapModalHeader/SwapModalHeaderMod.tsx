@@ -1,31 +1,37 @@
-import { Trans } from '@lingui/macro'
-import { Percent, TradeType, CurrencyAmount, Currency } from '@uniswap/sdk-core'
 import React, { useContext, useMemo } from 'react'
-import { AlertTriangle, ArrowDown } from 'react-feather'
+
+import { Percent, TradeType, CurrencyAmount, Currency } from '@uniswap/sdk-core'
+
+import { Trans } from '@lingui/macro'
+import { transparentize } from 'polished'
+import { ArrowDown } from 'react-feather'
 import { Text } from 'rebass'
 import styled, { ThemeContext } from 'styled-components/macro'
-import { useHigherUSDValue } from 'legacy/hooks/useStablecoinPrice'
-import { ThemedText } from 'legacy/theme'
-import { isAddress, shortenAddress } from 'legacy/utils'
-import { ButtonPrimary } from 'legacy/components/Button'
+
 import { AutoColumn } from 'legacy/components/Column'
-import { FiatValue } from 'legacy/components/CurrencyInputPanel/FiatValue'
-import CurrencyLogo from 'legacy/components/CurrencyLogo'
 import { RowBetween, RowFixed } from 'legacy/components/Row'
 import { AdvancedSwapDetails } from 'legacy/components/swap/AdvancedSwapDetails'
-import { SwapShowAcceptChanges, TruncatedText } from 'legacy/components/swap/styleds'
-import TradeGp from 'legacy/state/swap/TradeGp'
-import { INPUT_OUTPUT_EXPLANATION } from 'legacy/constants'
-import { computeSlippageAdjustedAmounts } from 'legacy/utils/prices'
-import { Field } from 'legacy/state/swap/actions'
-import { AuxInformationContainer } from 'legacy/components/CurrencyInputPanel/CurrencyInputPanelMod'
-import FeeInformationTooltip from '../FeeInformationTooltip'
-import { LightCardType } from './index'
-import { transparentize } from 'polished'
+import { AuxInformationContainer, TruncatedText } from 'legacy/components/swap/styleds'
 import { WarningProps } from 'legacy/components/SwapWarnings'
+import { INPUT_OUTPUT_EXPLANATION } from 'legacy/constants'
+import { useHigherUSDValue } from 'legacy/hooks/useStablecoinPrice'
+import { Field } from 'legacy/state/swap/actions'
+import TradeGp from 'legacy/state/swap/TradeGp'
+import { ThemedText } from 'legacy/theme'
+import { isAddress, shortenAddress } from 'legacy/utils'
+import { computeSlippageAdjustedAmounts } from 'legacy/utils/prices'
+
+import { PriceUpdatedBanner } from 'modules/trade/pure/PriceUpdatedBanner'
+
+import { CurrencyLogo } from 'common/pure/CurrencyLogo'
+import { FiatValue } from 'common/pure/FiatValue'
 import { RateInfo, RateInfoParams } from 'common/pure/RateInfo'
-import { TokenSymbol } from 'common/pure/TokenSymbol'
 import { TokenAmount } from 'common/pure/TokenAmount'
+import { TokenSymbol } from 'common/pure/TokenSymbol'
+
+import { LightCardType } from './index'
+
+import FeeInformationTooltip from '../FeeInformationTooltip'
 
 export const ArrowWrapper = styled.div`
   --size: 26px;
@@ -165,7 +171,10 @@ export default function SwapModalHeader({
               <Trans>To</Trans>
             </ThemedText.Body>
             <ThemedText.Body fontSize={14} color={theme.text3}>
-              <FiatValue fiatValue={fiatValueOutput} priceImpact={priceImpact} />
+              <FiatValue
+                fiatValue={fiatValueOutput}
+                priceImpactParams={{ priceImpact, error: undefined, loading: false }}
+              />
             </ThemedText.Body>
           </RowBetween>
           <RowBetween align="flex-end">
@@ -200,39 +209,7 @@ export default function SwapModalHeader({
       )}
       <StyledRateInfo label="Price" stylized={true} rateInfoParams={rateInfoParams} />
       <AdvancedSwapDetails trade={trade} allowedSlippage={allowedSlippage} />
-      {showAcceptChanges ? (
-        <SwapShowAcceptChanges justify="flex-start" gap={'0px'}>
-          <RowBetween>
-            <RowFixed>
-              <AlertTriangle size={20} style={{ marginRight: '8px', minWidth: 24 }} />
-              <ThemedText.Main color={theme.text1}>
-                <Trans>Price Updated</Trans>
-              </ThemedText.Main>
-            </RowFixed>
-            <ButtonPrimary
-              style={{ padding: '.5rem', width: 'fit-content', fontSize: '0.825rem', borderRadius: '12px' }}
-              onClick={onAcceptChanges}
-            >
-              <Trans>Accept</Trans>
-            </ButtonPrimary>
-          </RowBetween>
-        </SwapShowAcceptChanges>
-      ) : null}
-      {donationAmount && (
-        <RowBetween>
-          <Text fontSize={12} fontWeight={500} color={theme.text3}>
-            Giveth Donation{' '}
-            {/* <MouseoverTooltipContent content={'1% of your swap goes to donation.eth'} wrap>
-              <StyledInfoIcon size={16} />
-            </MouseoverTooltipContent> */}
-          </Text>
-          <Text fontSize={12} fontWeight={500}>
-            {`${donationAmount.toExact()} ${donationAmount.currency.symbol} (≈$${+donationAmount
-              .multiply(trade?.executionPrice!)
-              .toExact()})`}
-          </Text>
-        </RowBetween>
-      )}
+      {showAcceptChanges && <PriceUpdatedBanner onClick={onAcceptChanges} />}
       <AutoColumn
         justify="flex-start"
         gap="sm"
@@ -262,6 +239,21 @@ export default function SwapModalHeader({
           </ThemedText.Italic>
         )}
       </AutoColumn>
+      {donationAmount && (
+        <RowBetween>
+          <Text fontSize={12} fontWeight={500} color={theme.text3}>
+            Giveth Donation{' '}
+            {/* <MouseoverTooltipContent content={'1% of your swap goes to donation.eth'} wrap>
+              <StyledInfoIcon size={16} />
+            </MouseoverTooltipContent> */}
+          </Text>
+          <Text fontSize={12} fontWeight={500}>
+            {`${donationAmount.toExact()} ${donationAmount.currency.symbol} (≈$${+donationAmount
+              .multiply(trade?.executionPrice!)
+              .toExact()})`}
+          </Text>
+        </RowBetween>
+      )}
       {recipient !== null ? (
         <AutoColumn justify="flex-start" gap="sm">
           <ThemedText.Main style={{ padding: '0.75rem 1rem' }}>

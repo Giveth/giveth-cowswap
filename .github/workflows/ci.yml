@@ -1,0 +1,234 @@
+name: CI
+
+on:
+  # build on PR creation/updates, also when pushing to main/develop, or create a release
+  pull_request:
+    types: [opened, synchronize]
+  push:
+    branches: [main, develop]
+    tags: [v*]
+  workflow_dispatch: # Manually trigger it via UI/CLI/API
+
+env:
+  REPO_NAME_SLUG: cowswap
+  PR_NUMBER: ${{ github.event.number }}
+  NODE_VERSION: lts/gallium
+  REACT_APP_SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+  REACT_APP_PINATA_API_KEY: ${{ secrets.REACT_APP_PINATA_API_KEY }}
+  REACT_APP_PINATA_SECRET_API_KEY: ${{ secrets.REACT_APP_PINATA_SECRET_API_KEY }}
+  REACT_APP_SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+  REACT_APP_BLOCKNATIVE_API_KEY: ${{ secrets.REACT_APP_BLOCKNATIVE_API_KEY }}
+  REACT_APP_GOOGLE_ANALYTICS_ID: ${{ secrets.REACT_APP_GOOGLE_ANALYTICS_ID }}
+  REACT_APP_AMPLITUDE_KEY: ${{ secrets.REACT_APP_AMPLITUDE_KEY }}
+
+jobs:
+  setup:
+    name: Setup
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up node
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+
+      - name: Cache node_modules
+        id: cache-node-modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-${{ matrix.node-version }}-nodemodules1-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.node-version }}-nodemodules1-
+
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: Cache generated files
+        id: cache-generated-files
+        uses: actions/cache@v3
+        with:
+          path: |
+            src/state/data
+            src/locales
+          key: ${{ runner.os }}-generatedFiles-${{ hashFiles('**/yarn.lock') }}
+
+  test:
+    name: Test
+    needs: setup
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up node
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+
+      - name: Load dependencies
+        id: cache-node-modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-${{ matrix.node-version }}-nodemodules1-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.node-version }}-nodemodules1-
+
+      - name: Load generated files
+        id: cache-generated-files
+        uses: actions/cache@v3
+        with:
+          path: |
+            src/state/data
+            src/locales
+          key: ${{ runner.os }}-generatedFiles-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Unit Test
+        run: yarn test
+
+
+      # - name: Coveralls
+      #   uses: coverallsapp/github-action@v1.1.2
+      #   with:
+      #     github-token: ${{ secrets.GITHUB_TOKEN }}
+
+  lint:
+    name: Lint
+    needs: setup
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up node
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+
+      - name: Load dependencies
+        id: cache-node-modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-${{ matrix.node-version }}-nodemodules1-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.node-version }}-nodemodules1-
+
+      - name: Load generated files
+        id: cache-generated-files
+        uses: actions/cache@v3
+        with:
+          path: |
+            src/state/data
+            src/locales
+          key: ${{ runner.os }}-generatedFiles-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Run linters
+        uses: wearerequired/lint-action@v2
+        with:
+          github_token: ${{ secrets.github_token }}
+          eslint: true
+          eslint_args: "-c .eslintrc.json ."
+          auto_fix: ${{ github.event_name == 'pull_request' }}
+          prettier: true
+
+
+      - name: Run eslint
+        if: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.owner.login != github.repository_owner }}
+        run: yarn eslint .
+
+  vercel-dev:
+    # Deploys to Vercel dev environment
+    name: Vercel dev
+    needs: [test, lint]
+    if: github.ref == 'refs/heads/develop'
+    uses: ./.github/workflows/vercel.yml
+    secrets: inherit
+    with:
+      env_name: dev
+
+  vercel-pre-prod:
+    # Deploys to Vercel staging and barn environments
+    name: Vercel pre-prod
+    needs: [test, lint]
+    if: startsWith(github.ref, 'refs/tags/v')
+    uses: ./.github/workflows/vercel.yml
+    secrets: inherit
+    strategy:
+      matrix:
+        env_name: [barn, staging] # deploys both in parallel
+    with:
+      env_name: ${{ matrix.env_name }}
+
+  vercel-prod:
+    # Deploys to Vercel prod environment
+    name: Vercel prod
+    needs: [test, lint]
+    if: github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/vercel.yml
+    secrets: inherit
+    with:
+      env_name: prod
+
+  integration-tests:
+    name: Cypress
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Increase watchers
+        run: echo fs.inotify.max_user_watches=524288 | sudo tee -a /etc/sysctl.conf && sudo sysctl -p
+
+      - name: Set up node
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: yarn
+
+      # Install deps only
+      - name: Cypress install dependencies
+        id: cypress-deps
+        uses: cypress-io/github-action@v5.0.5
+        # Do not consider failure a failure. Well, sort of.
+        # See https://docs.github.com/en/actions/reference/context-and-expression-syntax-for-github-actions#steps-context
+        continue-on-error: true
+        with:
+          runTests: false
+
+      - name: Install Cypress binary
+        id: cypress-bin
+        # Only run if previous step failed
+        if: steps.cypress-deps.outcome == 'failure'
+        run: npx cypress install
+
+      # Actually run tests, building repo
+      - name: Cypress run
+        id: cypress-run
+        uses: cypress-io/github-action@v5.0.5
+        with:
+          # Uncomment to test the production release. Right now, it doens't work the automatic "connection"
+          #   very likely it's related to Web3StatusMod!
+          #   when un-commenting this, we need to uncomment also the "Download website" I added in this PR and prevent cypres from buildig the project again
+          # start: yarn serve:ci
+          start: yarn start
+          wait-on: http://localhost:3000
+          wait-on-timeout: 200
+        env:
+          CYPRESS_INTEGRATION_TEST_PRIVATE_KEY: ${{ secrets.CYPRESS_INTEGRATION_TEST_PRIVATE_KEY }}
+          CYPRESS_INTEGRATION_TESTS_INFURA_KEY: ${{ secrets.CYPRESS_INTEGRATION_TESTS_INFURA_KEY }}
+
+      # Open tmate ssh connection on failure for debugging
+      # Uncomment when needed and push upstream
+#      - name: Setup tmate session
+#        uses: mxschmitt/action-tmate@v3
+#        if: ${{ failure() }}

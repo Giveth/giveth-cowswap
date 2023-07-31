@@ -1,19 +1,24 @@
-import { TradeFlowContext } from 'modules/limitOrders/services/types'
-import { useWeb3React } from '@web3-react/core'
-import { CurrencyAmount, Token } from '@uniswap/sdk-core'
-import { useGnosisSafeInfo, useWalletDetails, useWalletInfo } from 'modules/wallet'
-import { useGP2SettlementContract } from 'legacy/hooks/useContract'
-import { useDispatch } from 'react-redux'
-import { AppDispatch } from 'legacy/state'
-import useENSAddress from 'legacy/hooks/useENSAddress'
-import { useLimitOrdersDerivedState } from './useLimitOrdersDerivedState'
+import { useAtomValue } from 'jotai'
+
 import { OrderClass } from '@cowprotocol/cow-sdk'
-import { useAtomValue } from 'jotai/utils'
-import { limitOrdersQuoteAtom } from 'modules/limitOrders/state/limitOrdersQuoteAtom'
-import { useUploadAppData, useAppData } from 'modules/appData'
+import { CurrencyAmount, Token } from '@uniswap/sdk-core'
+import { useWeb3React } from '@web3-react/core'
+
+import { useDispatch } from 'react-redux'
+
+import { useGP2SettlementContract } from 'legacy/hooks/useContract'
+import { AppDispatch } from 'legacy/state'
+
+import { useAppData } from 'modules/appData'
 import { useRateImpact } from 'modules/limitOrders/hooks/useRateImpact'
+import { TradeFlowContext } from 'modules/limitOrders/services/types'
 import { limitOrdersSettingsAtom } from 'modules/limitOrders/state/limitOrdersSettingsAtom'
-import { useFeatureFlags } from 'common/hooks/useFeatureFlags'
+import { useTradeQuote } from 'modules/tradeQuote'
+import { useGnosisSafeInfo, useWalletDetails, useWalletInfo } from 'modules/wallet'
+
+import { useFeatureFlags } from 'common/hooks/featureFlags/useFeatureFlags'
+
+import { useLimitOrdersDerivedState } from './useLimitOrdersDerivedState'
 
 export function useTradeFlowContext(): TradeFlowContext | null {
   const { provider } = useWeb3React()
@@ -24,9 +29,7 @@ export function useTradeFlowContext(): TradeFlowContext | null {
   const settlementContract = useGP2SettlementContract()
   const dispatch = useDispatch<AppDispatch>()
   const appData = useAppData()
-  const uploadAppData = useUploadAppData()
-  const { address: ensRecipientAddress } = useENSAddress(state.recipient)
-  const quoteState = useAtomValue(limitOrdersQuoteAtom)
+  const quoteState = useTradeQuote()
   const rateImpact = useRateImpact()
   const settingsState = useAtomValue(limitOrdersSettingsAtom)
   const { partialFillsEnabled } = useFeatureFlags()
@@ -46,8 +49,8 @@ export function useTradeFlowContext(): TradeFlowContext | null {
   }
 
   const isGnosisSafeWallet = !!gnosisSafeInfo
-  const recipientAddressOrName = state.recipient || ensRecipientAddress
-  const recipient = ensRecipientAddress || state.recipient || account
+  const recipientAddressOrName = state.recipient || state.recipientAddress
+  const recipient = state.recipientAddress || state.recipient || account
   const sellToken = state.inputCurrency as Token
   const buyToken = state.outputCurrency as Token
   const feeAmount = CurrencyAmount.fromRawAmount(state.inputCurrency, 0)
@@ -63,7 +66,6 @@ export function useTradeFlowContext(): TradeFlowContext | null {
     isGnosisSafeWallet,
     dispatch,
     provider,
-    uploadAppData,
     appData,
     rateImpact,
     postOrderParams: {
@@ -81,7 +83,7 @@ export function useTradeFlowContext(): TradeFlowContext | null {
       outputAmount: state.outputCurrencyAmount,
       sellAmountBeforeFee: state.inputCurrencyAmount,
       partiallyFillable,
-      appDataHash: appData.hash,
+      appData,
       quoteId,
     },
   }

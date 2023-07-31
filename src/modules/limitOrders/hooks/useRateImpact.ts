@@ -1,6 +1,7 @@
-import { useAtomValue } from 'jotai/utils'
-import { limitRateAtom } from 'modules/limitOrders/state/limitRateAtom'
+import { useAtomValue } from 'jotai'
 import { useMemo } from 'react'
+
+import { limitRateAtom } from 'modules/limitOrders/state/limitRateAtom'
 
 export function useRateImpact(): number {
   const { activeRate, marketRate, isLoading, isLoadingMarketRate } = useAtomValue(limitRateAtom)

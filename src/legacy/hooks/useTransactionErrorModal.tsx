@@ -1,8 +1,10 @@
 import { useCallback } from 'react'
+
+import { useCloseModals, useModalIsOpen, useOpenModal } from 'legacy/state/application/hooks'
 import { ApplicationModal } from 'legacy/state/application/reducer'
-import { TransactionErrorContent } from 'legacy/components/TransactionConfirmationModal'
-import { useOpenModal, useCloseModals, useModalIsOpen } from 'legacy/state/application/hooks'
-import { GpModal } from 'common/pure/Modal'
+
+import { CowModal } from 'common/pure/Modal'
+import { TransactionErrorContent } from 'common/pure/TransactionErrorContent'
 
 export default function useTransactionErrorModal() {
   const openModal = useOpenModal(ApplicationModal.TRANSACTION_ERROR)
@@ -14,9 +16,9 @@ export default function useTransactionErrorModal() {
     closeModal,
     TransactionErrorModal: useCallback(
       ({ message, onDismiss }: { message?: string; onDismiss: () => void }) => (
-        <GpModal isOpen={!!message && showTransactionErrorModal} onDismiss={closeModal}>
-          <TransactionErrorContent onDismiss={onDismiss} message={message} />
-        </GpModal>
+        <CowModal isOpen={!!message && showTransactionErrorModal} onDismiss={closeModal}>
+          <TransactionErrorContent onDismiss={onDismiss} message={message || ''} />
+        </CowModal>
       ),
       [closeModal, showTransactionErrorModal]
     ),

@@ -1,9 +1,12 @@
-import { Trans } from '@lingui/macro'
-import { getChainInfoOrDefault, L2ChainInfo } from 'legacy/constants/chainInfo'
 import { SupportedChainId } from '@cowprotocol/cow-sdk'
+
+import { Trans } from '@lingui/macro'
 import { AlertOctagon } from 'react-feather'
 import styled from 'styled-components/macro'
-import { ExternalLink, MEDIA_WIDTHS } from 'legacy/theme'
+
+import { getChainInfo } from 'legacy/constants/chainInfo'
+import { MEDIA_WIDTHS } from 'legacy/theme'
+
 import { useWalletInfo } from 'modules/wallet'
 
 const BodyRow = styled.div`
@@ -12,10 +15,6 @@ const BodyRow = styled.div`
 `
 const CautionIcon = styled(AlertOctagon)`
   color: ${({ theme }) => theme.black};
-`
-const Link = styled(ExternalLink)`
-  color: ${({ theme }) => theme.black};
-  text-decoration: underline;
 `
 const TitleRow = styled.div`
   align-items: center;
@@ -46,7 +45,7 @@ const Wrapper = styled.div`
 
 export function ChainConnectivityWarning() {
   const { chainId } = useWalletInfo()
-  const info = getChainInfoOrDefault(chainId)
+  const info = getChainInfo(chainId)
   const label = info?.label
 
   return (
@@ -63,14 +62,6 @@ export function ChainConnectivityWarning() {
         ) : (
           <Trans>You may have lost your network connection, or {label} might be down right now.</Trans>
         )}{' '}
-        {(info as L2ChainInfo).statusPage !== undefined && (
-          <span>
-            <Trans>Check network status</Trans>{' '}
-            <Link href={(info as L2ChainInfo).statusPage || ''}>
-              <Trans>here.</Trans>
-            </Link>
-          </span>
-        )}
       </BodyRow>
     </Wrapper>
   )

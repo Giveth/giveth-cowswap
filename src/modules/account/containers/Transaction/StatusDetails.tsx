@@ -1,43 +1,21 @@
-import SVG from 'react-inlinesvg'
-import { ExternalLink } from 'legacy/theme'
 import { ExternalLink as LinkIconFeather } from 'react-feather'
+import SVG from 'react-inlinesvg'
 
+import OrderCancelledImage from 'legacy/assets/cow-swap/order-cancelled.svg'
 import OrderCheckImage from 'legacy/assets/cow-swap/order-check.svg'
 import OrderExpiredImage from 'legacy/assets/cow-swap/order-expired.svg'
-import OrderCancelledImage from 'legacy/assets/cow-swap/order-cancelled.svg'
-
-import PresignaturePendingImage from 'legacy/assets/cow-swap/order-presignature-pending.svg'
 import OrderOpenImage from 'legacy/assets/cow-swap/order-open.svg'
-
-import { StatusLabel, StatusLabelWrapper, StatusLabelBelow, CancelTxLink } from './styled'
-import { ActivityDerivedState, determinePillColour } from './index'
-import { getSafeWebUrl } from 'api/gnosisSafe'
-import { SafeMultisigTransactionResponse } from '@safe-global/safe-core-sdk-types'
+import PresignaturePendingImage from 'legacy/assets/cow-swap/order-presignature-pending.svg'
 import { getActivityState } from 'legacy/hooks/useActivityDerivedState'
-import { CancelButton } from 'common/pure/CancelButton'
 import { ExplorerDataType, getExplorerLink } from 'legacy/utils/getExplorerLink'
+
+import { getSafeWebUrl } from 'api/gnosisSafe'
+import { CancelButton } from 'common/pure/CancelButton'
 import { isOrderCancellable } from 'common/utils/isOrderCancellable'
 
-export function GnosisSafeLink(props: {
-  chainId: number
-  safeTransaction?: SafeMultisigTransactionResponse
-}): JSX.Element | null {
-  const { chainId, safeTransaction } = props
+import { CancelTxLink, StatusLabel, StatusLabelBelow, StatusLabelWrapper } from './styled'
 
-  if (!safeTransaction) {
-    return null
-  }
-
-  const { safe, safeTxHash } = safeTransaction
-  const safeUrl = getSafeWebUrl(chainId, safe, safeTxHash)
-
-  // Only show the link to the safe, if we have the "safeUrl"
-  if (safeUrl === null) {
-    return null
-  }
-
-  return <ExternalLink href={safeUrl}>View Safe ↗</ExternalLink>
-}
+import { ActivityDerivedState, determinePillColour } from './index'
 
 function _getStateLabel(activityDerivedState: ActivityDerivedState) {
   const activityState = getActivityState(activityDerivedState)

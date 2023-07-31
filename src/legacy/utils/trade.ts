@@ -1,13 +1,3 @@
-import { Currency, CurrencyAmount, Token } from '@uniswap/sdk-core'
-import { isAddress, shortenAddress } from 'legacy/utils/index'
-import { ChangeOrderStatusParams, Order, OrderStatus } from 'legacy/state/orders/actions'
-import { AddUnserialisedPendingOrderParams } from 'legacy/state/orders/hooks'
-
-import { getTrades, OrderID } from 'api/gnosisProtocol'
-import { Signer } from '@ethersproject/abstract-signer'
-import { RADIX_DECIMAL, NATIVE_CURRENCY_BUY_ADDRESS } from 'legacy/constants'
-import { SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
-import { formatSymbol } from 'utils/format'
 import {
   EcdsaSigningScheme,
   OrderClass,
@@ -16,9 +6,23 @@ import {
   SigningScheme,
   OrderSigningUtils,
 } from '@cowprotocol/cow-sdk'
+import { SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
+import { Signer } from '@ethersproject/abstract-signer'
+import { Currency, CurrencyAmount, Token } from '@uniswap/sdk-core'
+
+import { orderBookApi } from 'cowSdk'
+
+import { RADIX_DECIMAL, NATIVE_CURRENCY_BUY_ADDRESS } from 'legacy/constants'
+import { ChangeOrderStatusParams, Order, OrderStatus } from 'legacy/state/orders/actions'
+import { AddUnserialisedPendingOrderParams } from 'legacy/state/orders/hooks'
+import { isAddress, shortenAddress } from 'legacy/utils/index'
+
+import { AppDataInfo } from 'modules/appData'
+
+import { getTrades, OrderID } from 'api/gnosisProtocol'
 import { getProfileData } from 'api/gnosisProtocol/api'
 import { formatTokenAmount } from 'utils/amountFormat'
-import { orderBookApi } from 'cowSdk'
+import { formatSymbol } from 'utils/format'
 
 export type PostOrderParams = {
   account: string
@@ -35,7 +39,7 @@ export type PostOrderParams = {
   recipient: string
   recipientAddressOrName: string | null
   allowsOffchainSigning: boolean
-  appDataHash: string
+  appData: AppDataInfo
   class: OrderClass
   partiallyFillable: boolean
   quoteId?: number
@@ -49,18 +53,16 @@ export type UnsignedOrderAdditionalParams = PostOrderParams & {
   orderCreationHash?: string
 }
 
-function _getSummary(params: PostOrderParams): string {
-  const {
-    kind,
-    account,
-    inputAmount,
-    outputAmount,
-    recipient,
-    recipientAddressOrName,
-    feeAmount,
-    sellToken,
-    buyToken,
-  } = params
+export function getOrderSubmitSummary(
+  params: Pick<
+    PostOrderParams,
+    'kind' | 'account' | 'inputAmount' | 'outputAmount' | 'recipient' | 'recipientAddressOrName' | 'feeAmount'
+  >
+): string {
+  const { kind, account, inputAmount, outputAmount, recipient, recipientAddressOrName, feeAmount } = params
+
+  const sellToken = inputAmount.currency
+  const buyToken = outputAmount.currency
 
   const [inputQuantifier, outputQuantifier] = [
     kind === OrderKind.BUY ? 'at most ' : '',
@@ -85,11 +87,13 @@ function _getSummary(params: PostOrderParams): string {
   }
 }
 
-export function getOrderParams(params: PostOrderParams): {
+export type SignOrderParams = {
   summary: string
   quoteId: number | undefined
   order: UnsignedOrder
-} {
+}
+
+export function getSignOrderParams(params: PostOrderParams): SignOrderParams {
   const {
     kind,
     inputAmount,
@@ -100,7 +104,7 @@ export function getOrderParams(params: PostOrderParams): {
     validTo,
     recipient,
     partiallyFillable,
-    appDataHash,
+    appData,
     quoteId,
   } = params
   const sellTokenAddress = sellToken.address
@@ -115,7 +119,7 @@ export function getOrderParams(params: PostOrderParams): {
   const buyAmount = outputAmount.quotient.toString(RADIX_DECIMAL)
 
   // Prepare order
-  const summary = _getSummary(params)
+  const summary = getOrderSubmitSummary(params)
   const receiver = recipient
 
   return {
@@ -127,7 +131,7 @@ export function getOrderParams(params: PostOrderParams): {
       sellAmount,
       buyAmount,
       validTo,
-      appData: appDataHash,
+      appData: appData.appDataKeccak256,
       feeAmount: feeAmount?.quotient.toString() || '0',
       kind,
       receiver,
@@ -198,10 +202,10 @@ function _getOrderStatus(allowsOffchainSigning: boolean, isOnChain: boolean | un
 }
 
 export async function signAndPostOrder(params: PostOrderParams): Promise<AddUnserialisedPendingOrderParams> {
-  const { chainId, account, signer, allowsOffchainSigning } = params
+  const { chainId, account, signer, allowsOffchainSigning, appData } = params
 
   // Prepare order
-  const { summary, quoteId, order: unsignedOrder } = getOrderParams(params)
+  const { summary, quoteId, order: unsignedOrder } = getSignOrderParams(params)
   const receiver = unsignedOrder.receiver
 
   let signingScheme: SigningScheme
@@ -229,6 +233,7 @@ export async function signAndPostOrder(params: PostOrderParams): Promise<AddUnse
       // Include the signature
       signature,
       quoteId,
+      appData: appData.fullAppData, // We sign the keccak256 hash, but we send the API the full appData string
     },
     { chainId }
   )

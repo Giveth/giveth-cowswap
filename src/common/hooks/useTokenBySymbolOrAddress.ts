@@ -1,23 +1,23 @@
-import { NativeCurrency, Token } from '@uniswap/sdk-core'
+import { useAtomValue } from 'jotai'
 import { useMemo } from 'react'
-import useNativeCurrency from 'lib/hooks/useNativeCurrency'
+
+import { NativeCurrency, Token } from '@uniswap/sdk-core'
+
 import { useFavouriteTokens } from 'legacy/state/user/hooks'
-import { isSupportedChainId } from 'lib/hooks/routing/clientSideSmartOrderRouter'
-import { useAtomValue } from 'jotai/utils'
+
 import { tokensByAddressAtom, tokensBySymbolAtom } from 'modules/tokensList/state/tokensListAtom'
-import { checkBySymbolAndAddress } from 'utils/checkBySymbolAndAddress'
-import { useWalletInfo } from 'modules/wallet'
+
+import useNativeCurrency from 'lib/hooks/useNativeCurrency'
+import { doesTokenMatchSymbolOrAddress } from 'utils/doesTokenMatchSymbolOrAddress'
 
 export function useTokenBySymbolOrAddress(symbolOrAddress?: string | null): Token | NativeCurrency | null {
-  const { chainId } = useWalletInfo()
   const tokensByAddress = useAtomValue(tokensByAddressAtom)
   const tokensBySymbol = useAtomValue(tokensBySymbolAtom)
   const nativeCurrency = useNativeCurrency()
   const favouriteTokens = useFavouriteTokens()
-  const isSupportedNetwork = isSupportedChainId(chainId)
 
   return useMemo(() => {
-    if (!symbolOrAddress || !isSupportedNetwork) {
+    if (!symbolOrAddress) {
       return null
     }
 
@@ -35,6 +35,6 @@ export function useTokenBySymbolOrAddress(symbolOrAddress?: string | null): Toke
 
     if (foundBySymbol) return foundBySymbol[0]
 
-    return favouriteTokens.find((item) => checkBySymbolAndAddress(item, symbolOrAddress)) || null
-  }, [symbolOrAddress, isSupportedNetwork, nativeCurrency, tokensByAddress, tokensBySymbol, favouriteTokens])
+    return favouriteTokens.find((item) => doesTokenMatchSymbolOrAddress(item, symbolOrAddress)) || null
+  }, [symbolOrAddress, nativeCurrency, tokensByAddress, tokensBySymbol, favouriteTokens])
 }

@@ -1,26 +1,29 @@
-import useSWR from 'swr'
-
-import { getOrders } from 'api/gnosisProtocol'
-import { AMOUNT_OF_ORDERS_TO_FETCH } from 'legacy/constants'
-import { supportedChainId } from 'legacy/utils/supportedChainId'
-import { useWalletInfo } from 'modules/wallet'
 import { EnrichedOrder } from '@cowprotocol/cow-sdk'
 
-export function useGpOrders(account?: string | null, refreshInterval?: number): EnrichedOrder[] | undefined {
-  const { chainId: _chainId } = useWalletInfo()
-  const chainId = supportedChainId(_chainId)
+import useSWR from 'swr'
 
-  const { data } = useSWR<EnrichedOrder[]>(
-    ['orders', account, chainId],
-    () => (chainId && account ? getOrders(chainId, account, AMOUNT_OF_ORDERS_TO_FETCH) : []),
-    { refreshInterval }
+import { GP_ORDER_UPDATE_INTERVAL } from 'legacy/constants'
+
+import { useSWROrdersRequest } from 'modules/orders/hooks/useSWROrdersRequest'
+import { useWalletInfo } from 'modules/wallet'
+
+import { getOrders } from './api'
+
+export function useGpOrders(): EnrichedOrder[] {
+  const { chainId } = useWalletInfo()
+
+  const requestParams = useSWROrdersRequest()
+
+  // Fetch orders for the current environment
+  const { data: currentEnvOrders } = useSWR<EnrichedOrder[]>(
+    ['orders', requestParams, chainId],
+    () => {
+      if (!chainId || !requestParams) return []
+
+      return getOrders(requestParams, { chainId })
+    },
+    { refreshInterval: GP_ORDER_UPDATE_INTERVAL }
   )
 
-  return data
-}
-
-export function useHasOrders(account?: string | null): boolean | undefined {
-  const gpOrders = useGpOrders(account)
-
-  return (gpOrders?.length || 0) > 0
+  return currentEnvOrders || []
 }

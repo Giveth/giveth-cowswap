@@ -1,11 +1,12 @@
-import SafeAppsSDK from '@safe-global/safe-apps-sdk'
-import { PostOrderParams } from 'legacy/utils/trade'
+import { Erc20, GPv2Settlement } from '@cowprotocol/abis'
 import { SupportedChainId } from '@cowprotocol/cow-sdk'
-import { AppDispatch } from 'legacy/state'
-import { Erc20 } from 'legacy/abis/types'
-import { GPv2Settlement } from 'abis/types'
 import { Web3Provider } from '@ethersproject/providers'
-import { AppDataInfo, UploadAppDataParams } from 'modules/appData'
+import SafeAppsSDK from '@safe-global/safe-apps-sdk'
+
+import { AppDispatch } from 'legacy/state'
+import { PostOrderParams } from 'legacy/utils/trade'
+
+import { AppDataInfo } from 'modules/appData'
 
 export interface TradeFlowContext {
   // signer changes creates redundant re-renders
@@ -16,7 +17,6 @@ export interface TradeFlowContext {
   dispatch: AppDispatch
   rateImpact: number
   appData: AppDataInfo
-  uploadAppData: (update: UploadAppDataParams) => void
   provider: Web3Provider
   allowsOffchainSigning: boolean
   isGnosisSafeWallet: boolean

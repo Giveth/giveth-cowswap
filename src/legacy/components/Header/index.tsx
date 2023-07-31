@@ -1,55 +1,69 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react'
-import { SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
-import { Routes } from 'constants/routes'
-import { useNavigate } from 'react-router-dom'
-import { useDarkModeManager } from 'legacy/state/user/hooks'
-import { useMediaQuery, upToSmall, upToMedium, upToLarge, LargeAndUp } from 'legacy/hooks/useMediaQuery'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 
-import { supportedChainId } from 'legacy/utils/supportedChainId'
+import { SupportedChainId as ChainId, SupportedChainId } from '@cowprotocol/cow-sdk'
+
+import SVG from 'react-inlinesvg'
+import { useNavigate } from 'react-router-dom'
+
+import { toggleDarkModeAnalytics } from 'legacy/components/analytics'
+import CowBalanceButton from 'legacy/components/CowBalanceButton'
+import { NetworkSelector } from 'legacy/components/Header/NetworkSelector'
+import { useIsActiveWallet } from 'legacy/hooks/useIsActiveWallet'
+import { LargeAndUp, upToLarge, upToMedium, upToSmall, useMediaQuery } from 'legacy/hooks/useMediaQuery'
+import { useDarkModeManager } from 'legacy/state/user/hooks'
+import { cowSwapLogo } from 'legacy/theme/cowSwapAssets'
 import { addBodyClass, removeBodyClass } from 'legacy/utils/toggleBodyClass'
 
-import {
-  Wrapper,
-  Title,
-  LogoImage,
-  HeaderModWrapper,
-  UniIcon,
-  AccountElement,
-  BalanceText,
-  HeaderControls,
-  HeaderElement,
-  HeaderRow,
-} from './styled'
+import { OrdersPanel } from 'modules/account/containers/OrdersPanel'
+import { useInjectedWidgetParams } from 'modules/injectedWidget'
+import { MainMenuContext, useMenuItems } from 'modules/mainMenu'
+import { MenuTree } from 'modules/mainMenu/pure/MenuTree'
+import { useSwapRawState } from 'modules/swap/hooks/useSwapRawState'
+import { useNativeCurrencyBalances } from 'modules/tokens/hooks/useCurrencyBalance'
+import { useTradeState } from 'modules/trade/hooks/useTradeState'
+import { getDefaultTradeRawState } from 'modules/trade/types/TradeRawState'
+import { useDisconnectWallet, useWalletInfo, Web3Status } from 'modules/wallet'
+import { walletConnectConnection } from 'modules/wallet/web3-react/connection/walletConnect'
+import { walletConnectConnectionV2 } from 'modules/wallet/web3-react/connection/walletConnectV2'
+
+import { Routes } from 'common/constants/routes'
+import { useFeatureFlags } from 'common/hooks/featureFlags/useFeatureFlags'
+import { useIsProviderNetworkUnsupported } from 'common/hooks/useIsProviderNetworkUnsupported'
+import { TokenAmount } from 'common/pure/TokenAmount'
+import { isInjectedWidget } from 'common/utils/isInjectedWidget'
 
 import MobileMenuIcon from './MobileMenuIcon'
-import { useWalletInfo, Web3Status } from 'modules/wallet'
-import { OrdersPanel } from 'modules/account/containers/OrdersPanel'
-import NetworkSelector from 'legacy/components/Header/NetworkSelector'
-import CowBalanceButton from 'legacy/components/CowBalanceButton'
-import SVG from 'react-inlinesvg'
-import { cowSwapLogo } from 'legacy/theme/cowSwapAssets'
-
-// Assets
-import { toggleDarkModeAnalytics } from 'legacy/components/analytics'
-import { useTradeState } from 'modules/trade/hooks/useTradeState'
-import { MAIN_MENU, MainMenuContext } from 'modules/mainMenu'
-import { MenuTree } from 'modules/mainMenu/pure/MenuTree'
-import { getDefaultTradeRawState } from 'modules/trade/types/TradeRawState'
-import { SupportedChainId } from '@cowprotocol/cow-sdk'
-import { TokenAmount } from 'common/pure/TokenAmount'
-import { useNativeCurrencyBalances } from 'modules/tokens/hooks/useCurrencyBalance'
-import { useSwapRawState } from 'modules/swap/hooks/useSwapRawState'
+import {
+  AccountElement,
+  BalanceText,
+  CustomLogoImg,
+  HeaderControls,
+  HeaderElement,
+  HeaderModWrapper,
+  HeaderRow,
+  LogoImage,
+  Title,
+  UniIcon,
+  Wrapper,
+} from './styled'
 
 const CHAIN_CURRENCY_LABELS: { [chainId in ChainId]?: string } = {
   [ChainId.GNOSIS_CHAIN]: 'xDAI',
 }
 
 export default function Header() {
-  const { account, chainId: connectedChainId } = useWalletInfo()
-  const chainId = supportedChainId(connectedChainId)
+  const { account, chainId } = useWalletInfo()
+  const isInjectedWidgetMode = isInjectedWidget()
+  const injectedWidgetParams = useInjectedWidgetParams()
+
+  const { walletConnectV1Enabled, walletConnectV2Enabled } = useFeatureFlags()
+  const isWalletConnectV1 = useIsActiveWallet(walletConnectConnection)
+  const isWalletConnectV2 = useIsActiveWallet(walletConnectConnectionV2)
+  const disconnectWallet = useDisconnectWallet()
+  const isChainIdUnsupported = useIsProviderNetworkUnsupported()
 
   const userEthBalance = useNativeCurrencyBalances(account ? [account] : [])?.[account ?? '']
-  const nativeToken = chainId && (CHAIN_CURRENCY_LABELS[chainId] || 'ETH')
+  const nativeToken = CHAIN_CURRENCY_LABELS[chainId] || 'ETH'
   const [darkMode, toggleDarkModeAux] = useDarkModeManager()
   const toggleDarkMode = useCallback(() => {
     toggleDarkModeAnalytics(!darkMode)
@@ -67,8 +81,10 @@ export default function Header() {
     !isOrdersPanelOpen && removeBodyClass('noScroll')
   }
 
+  const menuItems = useMenuItems()
+
   const navigate = useNavigate()
-  const handleBalanceButtonClick = () => navigate('/account')
+
   const isUpToLarge = useMediaQuery(upToLarge)
   const isUpToMedium = useMediaQuery(upToMedium)
   const isUpToSmall = useMediaQuery(upToSmall)
@@ -114,33 +130,53 @@ export default function Header() {
     isMobileMenuOpen || isOrdersPanelOpen ? addBodyClass('noScroll') : removeBodyClass('noScroll')
   }, [isOrdersPanelOpen, isMobileMenuOpen, isUpToLarge, isUpToMedium, isUpToSmall, isLargeAndUp])
 
+  // Disconnect wallet if its wallet-connect v1 and v1 flag is disabled
+  useEffect(() => {
+    if (
+      (walletConnectV1Enabled === false && isWalletConnectV1) ||
+      (walletConnectV2Enabled === false && isWalletConnectV2)
+    ) {
+      disconnectWallet()
+    }
+  }, [walletConnectV1Enabled, isWalletConnectV1, disconnectWallet, walletConnectV2Enabled, isWalletConnectV2])
+
   return (
     <Wrapper isMobileMenuOpen={isMobileMenuOpen}>
       <HeaderModWrapper>
         <HeaderRow>
-          <Title href={Routes.HOME} isMobileMenuOpen={isMobileMenuOpen}>
-            <UniIcon>
-              <LogoImage isMobileMenuOpen={isMobileMenuOpen}>
-                <SVG src={cowSwapLogo(darkMode)} />
-              </LogoImage>
-            </UniIcon>
-          </Title>
-          <MenuTree items={MAIN_MENU} isMobileMenuOpen={isMobileMenuOpen} context={menuContext} />
+          {!injectedWidgetParams.hideLogo && (
+            <Title href={isInjectedWidgetMode ? undefined : Routes.HOME} isMobileMenuOpen={isMobileMenuOpen}>
+              <UniIcon>
+                <LogoImage isMobileMenuOpen={isMobileMenuOpen}>
+                  {injectedWidgetParams.logoUrl ? (
+                    <CustomLogoImg src={injectedWidgetParams.logoUrl} alt="Logo" />
+                  ) : (
+                    <SVG src={cowSwapLogo(darkMode)} />
+                  )}
+                </LogoImage>
+              </UniIcon>
+            </Title>
+          )}
+          {!isInjectedWidgetMode && (
+            <MenuTree items={menuItems} isMobileMenuOpen={isMobileMenuOpen} context={menuContext} />
+          )}
         </HeaderRow>
 
         <HeaderControls>
-          <NetworkSelector />
+          {!injectedWidgetParams.hideNetworkSelector && <NetworkSelector />}
 
           <HeaderElement>
-            <CowBalanceButton
-              onClick={handleBalanceButtonClick}
-              account={account}
-              chainId={chainId}
-              isUpToSmall={isUpToSmall}
-            />
+            {!isInjectedWidgetMode && !isChainIdUnsupported && (
+              <CowBalanceButton
+                onClick={() => navigate('/account')}
+                account={account}
+                chainId={chainId}
+                isUpToSmall={isUpToSmall}
+              />
+            )}
 
             <AccountElement active={!!account} onClick={handleOpenOrdersPanel}>
-              {account && userEthBalance && chainId && (
+              {account && !isChainIdUnsupported && userEthBalance && chainId && (
                 <BalanceText>
                   <TokenAmount amount={userEthBalance} tokenSymbol={{ symbol: nativeToken }} />
                 </BalanceText>
@@ -150,7 +186,9 @@ export default function Header() {
           </HeaderElement>
         </HeaderControls>
 
-        {isUpToLarge && <MobileMenuIcon isMobileMenuOpen={isMobileMenuOpen} onClick={handleMobileMenuOnClick} />}
+        {isUpToLarge && !isInjectedWidgetMode && (
+          <MobileMenuIcon isMobileMenuOpen={isMobileMenuOpen} onClick={handleMobileMenuOnClick} />
+        )}
         {isOrdersPanelOpen && <OrdersPanel handleCloseOrdersPanel={handleCloseOrdersPanel} />}
       </HeaderModWrapper>
     </Wrapper>

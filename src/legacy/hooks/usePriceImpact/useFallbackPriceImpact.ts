@@ -1,14 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
+
 import { Percent } from '@uniswap/sdk-core'
 
-import useExactInSwap, { useCalculateQuote } from './useQuoteAndSwap'
-import { FallbackPriceImpactParams, PriceImpactTrade } from './types'
-import { calculateFallbackPriceImpact } from 'legacy/utils/price'
-import { QuoteInformationObject } from 'legacy/state/price/reducer'
-import { QuoteError } from 'legacy/state/price/actions'
-import { LegacyFeeQuoteParams } from 'api/gnosisProtocol/legacy/types'
-import { PRICE_QUOTE_VALID_TO_TIME } from 'constants/quote'
 import useIsWindowVisible from 'legacy/hooks/useIsWindowVisible'
+import { QuoteError } from 'legacy/state/price/actions'
+import { QuoteInformationObject } from 'legacy/state/price/reducer'
+import { calculateFallbackPriceImpact } from 'legacy/utils/price'
+
+import { LegacyFeeQuoteParams } from 'api/gnosisProtocol/legacy/types'
+import { PRICE_QUOTE_VALID_TO_TIME } from 'common/constants/quote'
+
+import { FallbackPriceImpactParams, PriceImpactTrade } from './types'
+import useExactInSwap, { useCalculateQuote } from './useQuoteAndSwap'
 
 type SwapParams = { abTrade?: PriceImpactTrade; sellToken?: string | null; buyToken?: string | null }
 
@@ -101,7 +104,7 @@ export default function useFallbackPriceImpact({
     if (quoteError) {
       setImpact(undefined)
       setError(quoteError)
-    } else if (!loading && abIn && abOut && baOut) {
+    } else if (!loading && abIn && abIn !== '0' && abOut && baOut) {
       // AB Trade is a SELL - we pass the inputAMount as the initial value
       // else we pass the outputAmount as the initialValue
       // Final value is the output of the BA trade as we always SELL in BA

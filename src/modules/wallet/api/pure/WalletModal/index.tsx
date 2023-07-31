@@ -1,22 +1,20 @@
-import { GpModal } from 'common/pure/Modal'
-
-import { Trans } from '@lingui/macro'
-import { Routes } from 'constants/routes'
-import { StyledInternalLink } from 'legacy/theme/components'
-
 import { Connector } from '@web3-react/types'
 
+import { Trans } from '@lingui/macro'
+
+import { LightCard } from 'legacy/components/Card'
 import { AutoColumn } from 'legacy/components/Column'
 import { AutoRow } from 'legacy/components/Row'
-
 import { ThemedText } from 'legacy/theme'
-import { LightCard } from 'legacy/components/Card'
+import { StyledInternalLink } from 'legacy/theme/components'
 
-import { HeaderRow, HoverText, CloseIcon, ContentWrapper } from 'common/pure/Modal'
-import { CloseColor, OptionGrid, TermsWrapper, UpperSection, Wrapper } from './styled'
 import { PendingView } from 'modules/wallet/api/pure/PendingView'
 import { ConnectWalletOptions, TryActivation } from 'modules/wallet/web3-react/connection'
-import { ZengoBanner } from 'modules/wallet/api/pure/ZengoBanner'
+
+import { Routes } from 'common/constants/routes'
+import { CloseIcon, ContentWrapper, CowModal, HeaderRow, HoverText } from 'common/pure/Modal'
+
+import { CloseColor, OptionGrid, TermsWrapper, UpperSection, Wrapper } from './styled'
 
 export type WalletModalView = 'options' | 'account' | 'pending'
 
@@ -44,15 +42,15 @@ export function WalletModal(props: WalletModalProps) {
     tryActivation,
     tryConnection,
     pendingConnector,
-    account,
+    // account,
   } = props
 
   const isPending = view === 'pending'
-  const isOptions = view === 'options'
-  const showZengoBanner = !account && !window.ethereum && isOptions
+  // const isOptions = view === 'options'
+  // const showZengoBanner = !account && !window.ethereum && isOptions
 
   return (
-    <GpModal maxWidth={600} isOpen={isOpen} onDismiss={toggleModal} minHeight={false} maxHeight={90}>
+    <CowModal maxWidth={600} isOpen={isOpen} onDismiss={toggleModal} minHeight={false} maxHeight={90}>
       <Wrapper>
         <UpperSection>
           <CloseIcon onClick={toggleModal}>
@@ -75,7 +73,7 @@ export function WalletModal(props: WalletModalProps) {
                   <ConnectWalletOptions tryActivation={tryActivation} />
                 </OptionGrid>
               )}
-              {showZengoBanner && <ZengoBanner />}
+              {/*{showZengoBanner && <ZengoBanner />}*/}
               {!pendingError && (
                 <LightCard>
                   <AutoRow style={{ flexWrap: 'nowrap' }}>
@@ -89,7 +87,7 @@ export function WalletModal(props: WalletModalProps) {
           </ContentWrapper>
         </UpperSection>
       </Wrapper>
-    </GpModal>
+    </CowModal>
   )
 }
 

@@ -1,32 +1,37 @@
-import { Trans } from '@lingui/macro'
-import { Currency, CurrencyAmount, Token } from '@uniswap/sdk-core'
-import { ElementName, Event, EventName } from 'legacy/components/AmplitudeAnalytics/constants'
-import { TraceEvent } from 'legacy/components/AmplitudeAnalytics/TraceEvent'
-import { LightGreyCard } from 'legacy/components/Card'
-import QuestionHelper from 'legacy/components/QuestionHelper'
-import useTheme from 'legacy/hooks/useTheme'
 import { CSSProperties, MutableRefObject, useCallback, useMemo } from 'react'
+
+import { Currency, CurrencyAmount, Token } from '@uniswap/sdk-core'
+
+import { Trans } from '@lingui/macro'
 import { FixedSizeList } from 'react-window'
 import { Text } from 'rebass'
 import styled from 'styled-components/macro'
+
 import TokenListLogo from 'legacy/assets/svg/tokenlist.svg'
-import { useAllTokens, useIsUserAddedToken } from 'legacy/hooks/Tokens'
-import { WrappedTokenInfo } from 'legacy/state/lists/wrappedTokenInfo'
-import { ThemedText } from 'legacy/theme'
+import { ElementName, Event, EventName } from 'legacy/components/AmplitudeAnalytics/constants'
+import { TraceEvent } from 'legacy/components/AmplitudeAnalytics/TraceEvent'
+import { LightGreyCard } from 'legacy/components/Card'
 import Column from 'legacy/components/Column'
-import CurrencyLogo from 'legacy/components/CurrencyLogo'
 import Loader from 'legacy/components/Loader'
+import QuestionHelper from 'legacy/components/QuestionHelper'
 import { RowBetween, RowFixed } from 'legacy/components/Row'
-import { MouseoverTooltip } from 'legacy/components/Tooltip'
 import ImportRow from 'legacy/components/SearchModal/ImportRow'
 import { LoadingRows } from 'legacy/components/SearchModal/styleds'
-import { MenuItem } from './index' // mod
+import { MouseoverTooltip } from 'legacy/components/Tooltip'
+import { useAllTokens, useIsUserAddedToken } from 'legacy/hooks/Tokens'
+import useTheme from 'legacy/hooks/useTheme'
 import { useIsUnsupportedTokenGp } from 'legacy/state/lists/hooks'
-import { TokenSymbol } from 'common/pure/TokenSymbol'
-import { TokenAmount } from 'common/pure/TokenAmount'
-import { isSupportedChainId } from 'lib/hooks/routing/clientSideSmartOrderRouter'
-import { useWalletInfo } from 'modules/wallet'
+import { WrappedTokenInfo } from 'legacy/state/lists/wrappedTokenInfo'
+import { ThemedText } from 'legacy/theme'
+
 import useCurrencyBalance from 'modules/tokens/hooks/useCurrencyBalance'
+import { useWalletInfo } from 'modules/wallet'
+
+import { CurrencyLogo } from 'common/pure/CurrencyLogo'
+import { TokenAmount } from 'common/pure/TokenAmount'
+import { TokenSymbol } from 'common/pure/TokenSymbol'
+
+import { MenuItem } from './index' // mod
 
 function currencyKey(currency: Currency): string {
   return currency.isToken ? currency.address : 'ETHER'
@@ -293,7 +298,6 @@ export default function CurrencyList({
   BalanceComponent?: (params: { balance: CurrencyAmount<Currency> }) => JSX.Element // gp-swap added
   TokenTagsComponent?: (params: { currency: Currency; isUnsupported: boolean }) => JSX.Element // gp-swap added
 }) {
-  const { chainId } = useWalletInfo()
   const allTokens = useAllTokens()
   const isUnsupportedToken = useIsUnsupportedTokenGp()
 
@@ -339,7 +343,7 @@ export default function CurrencyList({
       const otherSelected = Boolean(currency && otherCurrency && otherCurrency.equals(currency))
       const handleSelect = () => currency && onCurrencySelect(currency)
 
-      const token = isSupportedChainId(chainId) ? currency?.wrapped : undefined
+      const token = currency?.wrapped
 
       const showImport = index > currencies.length
 
@@ -392,7 +396,6 @@ export default function CurrencyList({
       BalanceComponent,
       TokenTagsComponent,
       allTokens,
-      chainId,
     ]
   )
 

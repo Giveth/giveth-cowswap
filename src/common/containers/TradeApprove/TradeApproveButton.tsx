@@ -1,18 +1,22 @@
 import React, { useCallback } from 'react'
-import { ApproveButton } from 'common/pure/ApproveButton'
+
 import { Currency, CurrencyAmount } from '@uniswap/sdk-core'
+
+import { useShouldZeroApprove } from 'common/hooks/useShouldZeroApprove'
+import { useZeroApprove } from 'common/hooks/useZeroApprove'
+import { ApproveButton } from 'common/pure/ApproveButton'
+
 import { useTradeApproveCallback } from './useTradeApproveCallback'
 import { useTradeApproveState } from './useTradeApproveState'
-import { useZeroApprove } from 'common/hooks/useZeroApprove'
-import { useShouldZeroApprove } from 'common/hooks/useShouldZeroApprove'
 
 export interface TradeApproveButtonProps {
   amountToApprove: CurrencyAmount<Currency>
   children?: React.ReactNode
+  isDisabled?: boolean
 }
 
 export function TradeApproveButton(props: TradeApproveButtonProps) {
-  const { amountToApprove, children } = props
+  const { amountToApprove, children, isDisabled } = props
 
   const currency = amountToApprove.currency
 
@@ -30,7 +34,7 @@ export function TradeApproveButton(props: TradeApproveButtonProps) {
 
   return (
     <>
-      <ApproveButton currency={currency} onClick={handleApprove} state={approvalState} />
+      <ApproveButton isDisabled={isDisabled} currency={currency} onClick={handleApprove} state={approvalState} />
 
       {children}
     </>

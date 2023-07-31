@@ -1,17 +1,19 @@
-import { Currency, CurrencyAmount, MaxUint256, Percent, Token } from '@uniswap/sdk-core'
-import { Field } from 'legacy/state/swap/actions'
-import { computeSlippageAdjustedAmounts } from 'legacy/utils/prices'
 import { useMemo } from 'react'
+
+import { TransactionResponse } from '@ethersproject/providers'
+import { Currency, CurrencyAmount, MaxUint256, Percent, Token } from '@uniswap/sdk-core'
+
 import { GP_VAULT_RELAYER, V_COW_CONTRACT_ADDRESS } from 'legacy/constants'
+import { ClaimType } from 'legacy/state/claim/hooks'
+import { Field } from 'legacy/state/swap/actions'
 import TradeGp from 'legacy/state/swap/TradeGp'
+import { computeSlippageAdjustedAmounts } from 'legacy/utils/prices'
+
+import { useWalletInfo } from 'modules/wallet'
+
+import { EnhancedUserClaimData } from 'pages/Claim/types'
 
 import { ApprovalState, ApproveCallbackParams, useApproveCallback } from './useApproveCallbackMod'
-
-import { ClaimType } from 'legacy/state/claim/hooks'
-import { supportedChainId } from 'legacy/utils/supportedChainId'
-import { EnhancedUserClaimData } from 'pages/Claim/types'
-import { TransactionResponse } from '@ethersproject/providers'
-import { useWalletInfo } from 'modules/wallet'
 
 export { ApprovalState, useApproveCallback } from './useApproveCallbackMod'
 
@@ -86,13 +88,12 @@ export function useApproveCallbackFromClaim({
   investmentAmount,
 }: ApproveCallbackFromClaimParams) {
   const { chainId } = useWalletInfo()
-  const supportedChain = supportedChainId(chainId)
 
   const vCowContract = chainId ? V_COW_CONTRACT_ADDRESS[chainId] : undefined
 
   // Claim only approves GNO and USDC (GnoOption & Investor, respectively.)
   const approveAmounts = useMemo(() => {
-    if (supportedChain && (claim.type === ClaimType.GnoOption || claim.type === ClaimType.Investor)) {
+    if (claim.type === ClaimType.GnoOption || claim.type === ClaimType.Investor) {
       const investmentCurrency = claim.currencyAmount?.currency as Currency
       return {
         amountToApprove: CurrencyAmount.fromRawAmount(investmentCurrency, MaxUint256),
@@ -101,7 +102,7 @@ export function useApproveCallbackFromClaim({
       }
     }
     return undefined
-  }, [claim.cost, claim.currencyAmount?.currency, claim.type, investmentAmount, supportedChain])
+  }, [claim.cost, claim.currencyAmount?.currency, claim.type, investmentAmount])
 
   // Params: modal cbs, amountToApprove: token user is investing e.g, spender: vcow token contract
   return useApproveCallback({
@@ -128,19 +129,15 @@ export function useApproveCallbackFromBalance({
   balance,
 }: ApproveCallbackFromBalanceParams) {
   const { chainId } = useWalletInfo()
-  const supportedChain = supportedChainId(chainId)
 
   const vaultRelayer = chainId ? GP_VAULT_RELAYER[chainId] : undefined
 
   const approveAmounts = useMemo(() => {
-    if (supportedChain) {
-      return {
-        amountToApprove: CurrencyAmount.fromRawAmount(token, MaxUint256),
-        amountToCheckAgainstAllowance: balance,
-      }
+    return {
+      amountToApprove: CurrencyAmount.fromRawAmount(token, MaxUint256),
+      amountToCheckAgainstAllowance: balance,
     }
-    return undefined
-  }, [balance, supportedChain, token])
+  }, [balance, token])
 
   return useApproveCallback({
     openTransactionConfirmationModal,

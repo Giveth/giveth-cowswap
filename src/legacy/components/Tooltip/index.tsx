@@ -1,4 +1,5 @@
 import { ReactNode, useCallback, useState } from 'react'
+
 import styled from 'styled-components/macro'
 
 import Popover, { PopoverProps } from 'legacy/components/Popover'
@@ -63,4 +64,11 @@ export function MouseoverTooltipContent({
       </div>
     </TooltipContent>
   )
+}
+
+export function renderTooltip(tooltip: ReactNode | ((params?: any) => ReactNode), params?: any): ReactNode {
+  if (typeof tooltip === 'function') {
+    return tooltip(params)
+  }
+  return tooltip
 }

@@ -77,6 +77,15 @@ This will start a server on the `http://localhost:5000/`
 yarn run cosmos
 ```
 
+## Build/test UI Library
+
+CoW Swap has a library of reusable components.
+
+```bash
+yarn ui:build
+yarn ui:test
+```
+
 ## Configuring the environment
 
 The app has some default configuration, but it's highly encouraged to define your own.
@@ -118,18 +127,11 @@ All price feeds are enabled by default, but they can be individually disabled by
 
 The app will attach some metadata to all orders.
 
-This metadata will be sent to the smart contract as a hexadecimal value in an order field called `AppData`. This value comes from hashing the content of a metadata JSON containing some information about the trade.
-
-Any web app or client using CoW Protocol can upload to IPFS a metadata JSON and use the digest hex to attach that
-information to the order.
-
-For example, CoW Swap uploaded the file https://cloudflare-ipfs.com/ipfs/QmTDarZ47oek1miuRd8uuNCy5AFfjzQbWJ7348izx9N8wQ
-which has the hexadecimal digest `0x487B02C558D729ABAF3ECF17881A4181E5BC2446429A0995142297E897B6EB37` (See
-[CID Explorer](https://cid.ipfs.io/#QmTDarZ47oek1miuRd8uuNCy5AFfjzQbWJ7348izx9N8wQ) for more details).
+This metadata will be sent to the smart contract as a hexadecimal value in an order field called `AppData`. This value comes from hashing the content of a metadata JSON containing some information about the trade (using `keccak256` on the `UTF-8` bytes).
 
 The format of the JSON follows this typescript format: <src/utils/metadata.ts>
 
-To set your own `AppData`, change `REACT_APP_DOMAIN_REGEX_<environment>` environment variable. Ask for yours at [CoW Swap's Discord channel](https://discord.com/invite/cowprotocol/). For more details, check out the environment file (<.env>)
+To set your own `AppData`, change `REACT_APP_FULL_APP_DATA_<environment>` environment variable. For more details, check out the environment file (<.env>)
 
 ### Supported networks
 
@@ -182,7 +184,18 @@ The plan:
 
 `emergency.js` is not cached by browser and loaded before all.
 
+## Wallet Connect
+
+The app uses a Wallet Connect v1 bridge.
+
+You can define your own bridge by setting the following environment variable:
+
+```ini
+REACT_APP_WALLET_CONNECT_V1_BRIDGE='https://bridge.walletconnect.org'
+```
+
 ## Documentation
 
 1. [Oveall Architecture](docs/architecture-overview.md)
 2. [Amounts formatting](src/utils/amountFormat/README.md)
+3. [ABIs](src/libs/abis/README.md)

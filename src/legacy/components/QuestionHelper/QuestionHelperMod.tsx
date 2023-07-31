@@ -1,9 +1,10 @@
-import { /* ReactNode, */ useCallback, useState } from 'react'
-import styled from 'styled-components/macro'
-import Tooltip from 'legacy/components/Tooltip'
+import { useCallback, useState } from 'react'
 
-// MOD imports
+import styled from 'styled-components/macro'
+
+import Tooltip, { renderTooltip } from 'legacy/components/Tooltip'
 import { TooltipProps } from 'legacy/components/Tooltip'
+
 import { QuestionWrapper } from './index'
 
 /* const QuestionWrapper = styled.div`
@@ -65,7 +66,7 @@ export default function QuestionHelper({ text, className, QuestionMark, ...toolt
 
   const content = (
     <div onMouseEnter={open} onMouseLeave={close}>
-      {text}
+      {renderTooltip(text, tooltipProps)}
     </div>
   )
 

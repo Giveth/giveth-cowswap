@@ -1,10 +1,13 @@
-import { createAction } from '@reduxjs/toolkit'
-import { Token } from '@uniswap/sdk-core'
-import { SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
-import { SerializedToken } from 'legacy/state/user/types'
-import { SafeMultisigTransactionResponse } from '@safe-global/safe-core-sdk-types'
+import { EnrichedOrder, OrderClass, OrderCreation, SupportedChainId as ChainId, UID } from '@cowprotocol/cow-sdk'
 import { BigNumberish } from '@ethersproject/bignumber'
-import { UID, EnrichedOrder, OrderClass, OrderCreation } from '@cowprotocol/cow-sdk'
+import { SafeMultisigTransactionResponse } from '@safe-global/safe-core-sdk-types'
+import { Token } from '@uniswap/sdk-core'
+
+import { createAction } from '@reduxjs/toolkit'
+
+import { SerializedToken } from 'legacy/state/user/types'
+
+import { ComposableCowInfo } from 'common/types'
 
 export enum OrderStatus {
   PENDING = 'pending',
@@ -14,12 +17,18 @@ export enum OrderStatus {
   CANCELLED = 'cancelled',
   CREATING = 'creating',
   FAILED = 'failed',
+  SCHEDULED = 'scheduled',
 }
 
 // Common states groups
-export const PENDING_STATES = [OrderStatus.PENDING, OrderStatus.PRESIGNATURE_PENDING, OrderStatus.CREATING]
+export const PENDING_STATES = [
+  OrderStatus.PENDING,
+  OrderStatus.PRESIGNATURE_PENDING,
+  OrderStatus.CREATING,
+  OrderStatus.SCHEDULED,
+]
 export const CONFIRMED_STATES = [OrderStatus.FULFILLED, OrderStatus.EXPIRED, OrderStatus.CANCELLED, OrderStatus.FAILED]
-export const CREATING_STATES = [OrderStatus.PRESIGNATURE_PENDING, OrderStatus.CREATING]
+export const CREATING_STATES = [OrderStatus.PRESIGNATURE_PENDING, OrderStatus.CREATING, OrderStatus.SCHEDULED]
 
 // Abstract type for the order used in the Dapp. It's composed out of 3 types of props:
 //  - Information present in the order creation type used in the API to post new orders
@@ -60,6 +69,24 @@ export interface BaseOrder extends Omit<OrderCreation, 'signingScheme'> {
 
   // For tracking how long an order has been pending
   openSince?: number
+
+  /**
+   * Whether the order should be hidden in the UI
+   *
+   * Orders are temporarily hidden from the moment the order is created in the backend
+   * until we get a confirmation from the wallet that the onchain transaction has been created
+   *
+   * Useful for onchain orders only, as the order placement process is not atomic
+   *
+   * Keep in mind that we cannot tell whether the order should be hidden if we only have backend info
+   * The order data is local to the device where the order was initiated
+   */
+  isHidden?: boolean
+
+  /**
+   * ComposableCoW-specific info
+   */
+  composableCowInfo?: ComposableCowInfo
 }
 
 /**
@@ -81,6 +108,7 @@ export type OrderInfoApi = Pick<
   | 'invalidated'
   | 'ethflowData'
   | 'onchainOrderData'
+  | 'class'
 >
 
 /**
@@ -147,6 +175,7 @@ export interface UpdatePresignGnosisSafeTxParams {
 export type ExpireOrdersBatchParams = BatchOrdersUpdateParams
 export type InvalidateOrdersBatchParams = BatchOrdersUpdateParams
 export type CancelOrdersBatchParams = BatchOrdersUpdateParams
+export type DeleteOrdersParams = BatchOrdersUpdateParams
 
 export const addOrUpdateOrders = createAction<AddOrUpdateOrdersParams>('order/addOrUpdateOrders')
 
@@ -170,11 +199,15 @@ export const requestOrderCancellation = createAction<ChangeOrderStatusParams>('o
 
 export const cancelOrdersBatch = createAction<CancelOrdersBatchParams>('order/cancelOrdersBatch')
 
+export const deleteOrders = createAction<DeleteOrdersParams>('order/deleteOrders')
+
 export const clearOrders = createAction<{ chainId: ChainId }>('order/clearOrders')
 
 export const updateLastCheckedBlock = createAction<{ chainId: ChainId; lastCheckedBlock: number }>(
   'order/updateLastCheckedBlock'
 )
+
+export const clearOrdersStorage = createAction('order/clearOrdersStorage')
 
 export type SetIsOrderUnfillableParams = {
   id: UID

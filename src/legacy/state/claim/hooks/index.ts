@@ -1,22 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import JSBI from 'jsbi'
-import ms from 'ms.macro'
-import { CurrencyAmount, Price, Token } from '@uniswap/sdk-core'
+
+import { VCow } from '@cowprotocol/abis'
+import { SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
+import { SupportedChainId } from '@cowprotocol/cow-sdk'
+import { BigNumber } from '@ethersproject/bignumber'
 import { TransactionResponse } from '@ethersproject/providers'
 import { parseUnits } from '@ethersproject/units'
-import { BigNumber } from '@ethersproject/bignumber'
+import { CallState } from '@uniswap/redux-multicall'
+import { CurrencyAmount, Price, Token } from '@uniswap/sdk-core'
 
-import { VCow as VCowType } from 'abis/types'
-
-import { useVCowContract } from 'legacy/hooks/useContract'
-import { useSingleContractMultipleData } from 'lib/hooks/multicall'
-import { useTransactionAdder } from 'legacy/state/enhancedTransactions/hooks'
+import JSBI from 'jsbi'
+import ms from 'ms.macro'
+import { useSelector, useDispatch } from 'react-redux'
 
 import { GpEther, V_COW } from 'legacy/constants/tokens'
-
-import { calculateGasMargin } from 'legacy/utils/calculateGasMargin'
-import { isAddress } from 'legacy/utils'
-
+import { useVCowContract } from 'legacy/hooks/useContract'
+import useIsMounted from 'legacy/hooks/useIsMounted'
+import { AppDispatch } from 'legacy/state'
+import { AppState } from 'legacy/state'
 import {
   getClaimKey,
   getClaimsRepoPath,
@@ -24,12 +25,17 @@ import {
   claimTypeToTokenAmount,
   transformRepoClaimsToUserClaims,
 } from 'legacy/state/claim/hooks/utils'
-import { SupportedChainId } from '@cowprotocol/cow-sdk'
+import { ClaimInfo } from 'legacy/state/claim/reducer'
+import { useTransactionAdder } from 'legacy/state/enhancedTransactions/hooks'
 import { useAllClaimingTransactionIndices } from 'legacy/state/enhancedTransactions/hooks'
+import { isAddress } from 'legacy/utils'
+import { calculateGasMargin } from 'legacy/utils/calculateGasMargin'
 
-import { AppDispatch } from 'legacy/state'
-import { useSelector, useDispatch } from 'react-redux'
-import { AppState } from 'legacy/state'
+import { useWalletInfo } from 'modules/wallet'
+
+import { useSingleContractMultipleData } from 'lib/hooks/multicall'
+import { EnhancedUserClaimData } from 'pages/Claim/types'
+import { formatTokenAmount } from 'utils/amountFormat'
 
 import {
   setInputAddress,
@@ -51,14 +57,6 @@ import {
   setIsTouched,
   setClaimsCount,
 } from '../actions'
-import { EnhancedUserClaimData } from 'pages/Claim/types'
-import { supportedChainId } from 'legacy/utils/supportedChainId'
-import useIsMounted from 'legacy/hooks/useIsMounted'
-import { SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
-import { ClaimInfo } from 'legacy/state/claim/reducer'
-import { CallState } from '@uniswap/redux-multicall'
-import { formatTokenAmount } from 'utils/amountFormat'
-import { useWalletInfo } from 'modules/wallet'
 
 export { useUserClaimData, useUserHasAvailableClaim } from './hooksUni'
 
@@ -278,7 +276,7 @@ export function useUserClaims(account: Account, optionalChainId?: SupportedChain
 }
 
 const FETCH_DEPLOYMENT_TIME_PROMISES: Map<ChainId, Promise<number>> = new Map()
-function fetchDeploymentTimestamp(vCowContract: VCowType, chainId: ChainId): Promise<number> {
+function fetchDeploymentTimestamp(vCowContract: VCow, chainId: ChainId): Promise<number> {
   let deploymentTimePromise = FETCH_DEPLOYMENT_TIME_PROMISES.get(chainId)
 
   if (!deploymentTimePromise) {
@@ -601,7 +599,7 @@ type GetClaimManyArgsParams = {
   nativeTokenPrice: string
 }
 
-type ClaimManyFnArgs = Parameters<VCowType['claimMany']>
+type ClaimManyFnArgs = Parameters<VCow['claimMany']>
 
 type GetClaimManyArgsResult = {
   args: ClaimManyFnArgs | undefined
@@ -928,19 +926,18 @@ type UseUserEnhancedClaimDataResult = {
  */
 export function useUserEnhancedClaimData(account: Account): UseUserEnhancedClaimDataResult {
   const { available, claimed, isLoading } = useClassifiedUserClaims(account)
-  const { chainId: preCheckChainId } = useWalletInfo()
+  const { chainId } = useWalletInfo()
   const native = useNativeTokenPrice()
   const gno = useGnoPrice()
   const usdc = useStablecoinPrice()
 
   const claims = useMemo(() => {
-    const chainId = supportedChainId(preCheckChainId)
     if (!chainId || !native || !gno || !usdc) return []
 
     const sorted = available.sort(_sortTypes)
 
     return sorted.map((claim) => _enhanceClaimData(claim, chainId, { native, gno, usdc }))
-  }, [available, gno, native, preCheckChainId, usdc])
+  }, [available, gno, native, chainId, usdc])
 
   const isClaimed = useMemo(() => {
     return Boolean(!available.length && claimed.length)

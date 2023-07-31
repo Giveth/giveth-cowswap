@@ -1,11 +1,16 @@
-import { FractionLike, Nullish } from 'types'
 import { Currency, CurrencyAmount, Percent, Rounding } from '@uniswap/sdk-core'
-import { maxAmountSpend } from 'legacy/utils/maxAmountSpend'
+
+import JSBI from 'jsbi'
+import { FractionLike, Nullish } from 'types'
+
 import { AMOUNT_PRECISION, FIAT_PRECISION, PERCENTAGE_PRECISION, ZERO_FRACTION } from 'legacy/constants'
-import { trimTrailingZeros } from 'utils/trimTrailingZeros'
+import { maxAmountSpend } from 'legacy/utils/maxAmountSpend'
+
+import { INTL_NUMBER_FORMAT } from 'common/constants/intl'
 import { FractionUtils } from 'utils/fractionUtils'
+import { trimTrailingZeros } from 'utils/trimTrailingZeros'
+
 import { getPrecisionForAmount, getSuffixForAmount, lessThanPrecisionSymbol, trimHugeAmounts } from './utils'
-import { INTL_NUMBER_FORMAT } from 'constants/intl'
 
 export function formatFiatAmount(amount: Nullish<FractionLike>): string {
   return formatAmountWithPrecision(amount, FIAT_PRECISION)
@@ -38,23 +43,32 @@ export function formatAmountWithPrecision(
   const { quotient, remainder } = trimHugeAmounts(amountAsFraction)
 
   const decimalsSeparator = numberFormat.format(1.1)[1]
+
+  // Trim the remainder up to precision
+  const reminderWithPrecision = remainder.toFixed(precision, undefined, Rounding.ROUND_HALF_UP)
+
+  // If rounding up means we carry over to the next integer, add 1 to quotient
+  const adjustedQuotient = +reminderWithPrecision >= 1 ? JSBI.add(quotient, JSBI.BigInt(1)) : quotient
+
   // Apply the language formatting for the amount
   // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Intl/NumberFormat
-  const formattedQuotient = numberFormat.format(BigInt(trimTrailingZeros(quotient.toString(), decimalsSeparator)))
-  // Trim the remainder up to precision
-  const fixedRemainder = remainder.toFixed(precision, undefined, Rounding.ROUND_HALF_UP)
+  const formattedQuotient = numberFormat.format(
+    BigInt(trimTrailingZeros(adjustedQuotient.toString(), decimalsSeparator))
+  )
 
-  // toFixed() could round the remainder up, and the result could be 1.00 or greater
-  if (+fixedRemainder >= 1) {
-    return trimTrailingZeros(fixedRemainder)
-  }
+  // Remove trailing zeros
+  const reminderWithotTrailingZeros = trimTrailingZeros(reminderWithPrecision)
 
-  const formattedRemainder = remainder.greaterThan(0)
-    ? decimalsSeparator + trimTrailingZeros(fixedRemainder.slice(1)).slice(1)
-    : ''
-  const result = formattedQuotient + formattedRemainder + suffix
+  // Make sure the reminder is internationalised
+  const formattedRemainder =
+    reminderWithotTrailingZeros.includes('.') && remainder.greaterThan(0)
+      ? decimalsSeparator + reminderWithotTrailingZeros.slice(2) // removes the integer part and the decimals separator (note how is pre-pended)
+      : ''
 
-  return amount.greaterThan(0) && +result === 0 ? lessThanPrecisionSymbol(precision) : result
+  const result = formattedQuotient + (formattedRemainder === '0' ? '' : formattedRemainder) + suffix
+
+  const nonZeroAmountIsRoundedToZero = amount.greaterThan(0) && +result === 0
+  return nonZeroAmountIsRoundedToZero ? lessThanPrecisionSymbol(precision) : result
 }
 
 export function formatInputAmount(

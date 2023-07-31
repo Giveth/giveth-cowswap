@@ -1,10 +1,7 @@
-import styled from 'styled-components/macro'
+import { BlockExplorerLinkType, formatOrderId } from 'legacy/utils'
 
-import { formatOrderId, shortenOrderId } from 'legacy/utils'
-import { OrderID } from 'api/gnosisProtocol'
-import { addPopup } from 'legacy/state/application/reducer'
 import { OrderStatus } from './actions'
-import { CancellationSummary } from 'modules/account/containers/Transaction/styled'
+import { OrderObject, OrdersStateNetwork } from './reducer'
 
 type OrderStatusExtended = OrderStatus | 'submitted' | 'presigned'
 
@@ -13,13 +10,7 @@ interface SetOrderSummaryParams {
   status?: OrderStatusExtended
   summary?: string | JSX.Element
   descriptor?: string | null
-}
-
-// what is passed to addPopup action
-export type PopupPayload = Parameters<typeof addPopup>[0]
-export interface OrderIDWithPopup {
-  id: OrderID
-  popup: PopupPayload
+  orderType?: BlockExplorerLinkType
 }
 
 export enum OrderTxTypes {
@@ -35,6 +26,7 @@ enum OrderIdType {
 interface BasePopupContent {
   success: boolean
   summary: string | JSX.Element
+  orderType?: BlockExplorerLinkType
 }
 
 type IdOrHash<K extends OrderIdType, T extends OrderTxTypes> = {
@@ -67,32 +59,16 @@ function setOrderSummary({ id, summary, status, descriptor }: SetOrderSummaryPar
   return summary
 }
 
-const Wrapper = styled.div`
-  & > p:first-child {
-    margin-top: 0;
-  }
-
-  & > p:last-child {
-    margin-bottom: 0;
-  }
-`
-
-export function buildCancellationPopupSummary(id: string, summary: string | undefined): JSX.Element {
-  return (
-    <Wrapper>
-      <p>Order successfully cancelled</p>
-      <p>
-        Order <strong>{shortenOrderId(id)}</strong>:
-      </p>
-      <CancellationSummary as="p">{summary}</CancellationSummary>
-    </Wrapper>
-  )
-}
-
 // Metatxn popup
 export function setPopupData(
   type: OrderTxTypes.METATXN,
-  { success, id, summary, status, descriptor }: SetOrderSummaryParams & { success?: boolean }
+  {
+    success,
+    id,
+    summary,
+    status,
+    descriptor,
+  }: SetOrderSummaryParams & { success?: boolean; orderType?: BlockExplorerLinkType }
 ): { key?: string; content: MetaPopupContent }
 // Txn popup
 export function setPopupData(
@@ -101,7 +77,7 @@ export function setPopupData(
 ): { key?: string; content: TxnPopupContent }
 export function setPopupData(
   type: OrderTxTypes,
-  { hash, success = true, id, summary, status, descriptor }: any
+  { hash, success = true, id, summary, status, descriptor, orderType }: any
 ): { key?: string; content: TxnPopupContent | MetaPopupContent } {
   const key = id + '_' + status
   const baseContent = {
@@ -127,9 +103,29 @@ export function setPopupData(
       metatxn: {
         id,
         ...baseContent,
+        orderType,
       },
     }
   }
 
   return { key, content }
+}
+
+export function getOrderByIdFromState(orders: OrdersStateNetwork | undefined, id: string): OrderObject | undefined {
+  if (!orders) {
+    return
+  }
+
+  const { pending, presignaturePending, fulfilled, expired, cancelled, creating, failed, scheduled } = orders
+
+  return (
+    pending?.[id] ||
+    presignaturePending?.[id] ||
+    fulfilled?.[id] ||
+    expired?.[id] ||
+    cancelled?.[id] ||
+    creating?.[id] ||
+    scheduled?.[id] ||
+    failed?.[id]
+  )
 }

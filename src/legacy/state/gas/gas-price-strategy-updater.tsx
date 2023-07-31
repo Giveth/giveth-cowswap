@@ -1,18 +1,20 @@
-import { useWeb3React } from '@web3-react/core'
-import { supportedChainId } from 'legacy/utils/supportedChainId'
-import { useUpdateAtom } from 'jotai/utils'
-import { gasPriceStrategyAtom } from 'legacy/state/gas/atoms'
-import ms from 'ms.macro'
+import { useSetAtom } from 'jotai'
 import { useEffect } from 'react'
-import { getPriceStrategy } from 'api/gnosisProtocol/priceApi'
+
+import ms from 'ms.macro'
+
 import { DEFAULT_GP_PRICE_STRATEGY } from 'legacy/constants'
+import { gasPriceStrategyAtom } from 'legacy/state/gas/atoms'
+
+import { useWalletInfo } from 'modules/wallet'
+
+import { getPriceStrategy } from 'api/gnosisProtocol/priceApi'
 
 const GP_PRICE_STRATEGY_INTERVAL_TIME = ms`30 minutes`
 
 export function GasPriceStrategyUpdater(): null {
-  const { chainId: preChainId } = useWeb3React()
-  const setGasPriceStrategy = useUpdateAtom(gasPriceStrategyAtom)
-  const chainId = supportedChainId(preChainId)
+  const { chainId } = useWalletInfo()
+  const setGasPriceStrategy = useSetAtom(gasPriceStrategyAtom)
 
   useEffect(() => {
     if (!chainId) return

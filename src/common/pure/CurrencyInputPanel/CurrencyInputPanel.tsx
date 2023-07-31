@@ -1,22 +1,26 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import * as styledEl from './styled'
-import { CurrencySelectButton } from 'modules/swap/pure/CurrencySelectButton'
-import { Currency } from '@uniswap/sdk-core'
-import CurrencySearchModal from 'legacy/components/SearchModal/CurrencySearchModal'
-import { FiatValue } from 'legacy/components/CurrencyInputPanel/FiatValue/FiatValueMod'
-import { Trans } from '@lingui/macro'
-import { PriceImpact } from 'legacy/hooks/usePriceImpact'
-import { ReceiveAmount } from 'modules/swap/pure/ReceiveAmount'
-import { BalanceAndSubsidy } from 'legacy/hooks/useCowBalanceAndSubsidy'
-import { setMaxSellTokensAnalytics } from 'legacy/components/analytics'
-import { maxAmountSpend } from 'legacy/utils/maxAmountSpend'
-import { Field } from 'legacy/state/swap/actions'
-import { CurrencyInfo } from 'common/pure/CurrencyInputPanel/types'
-import { isSupportedChainId } from 'lib/hooks/routing/clientSideSmartOrderRouter'
+
 import { SupportedChainId } from '@cowprotocol/cow-sdk'
+import { Currency, CurrencyAmount } from '@uniswap/sdk-core'
+
+import { Trans } from '@lingui/macro'
+
+import { setMaxSellTokensAnalytics } from 'legacy/components/analytics'
+import CurrencySearchModal from 'legacy/components/SearchModal/CurrencySearchModal'
 import { MouseoverTooltip } from 'legacy/components/Tooltip'
+import { BalanceAndSubsidy } from 'legacy/hooks/useCowBalanceAndSubsidy'
+import { PriceImpact } from 'legacy/hooks/usePriceImpact'
+import { Field } from 'legacy/state/swap/actions'
+
+import { ReceiveAmount } from 'modules/swap/pure/ReceiveAmount'
+
+import { CurrencyInfo } from 'common/pure/CurrencyInputPanel/types'
+import { CurrencySelectButton } from 'common/pure/CurrencySelectButton'
+import { FiatValue } from 'common/pure/FiatValue'
 import { TokenAmount } from 'common/pure/TokenAmount'
 import { formatInputAmount } from 'utils/amountFormat'
+
+import * as styledEl from './styled'
 
 interface BuiltItProps {
   className: string
@@ -25,12 +29,14 @@ interface BuiltItProps {
 export interface CurrencyInputPanelProps extends Partial<BuiltItProps> {
   id: string
   chainId: SupportedChainId | undefined
-  loading: boolean
+  areCurrenciesLoading: boolean
+  isChainIdUnsupported: boolean
   disabled?: boolean
   inputDisabled?: boolean
   inputTooltip?: string
   isRateLoading?: boolean
   showSetMax?: boolean
+  maxBalance?: CurrencyAmount<Currency> | undefined
   disableNonToken?: boolean
   allowsOffchainSigning: boolean
   currencyInfo: CurrencyInfo
@@ -44,17 +50,19 @@ export interface CurrencyInputPanelProps extends Partial<BuiltItProps> {
 export function CurrencyInputPanel(props: CurrencyInputPanelProps) {
   const {
     id,
-    loading,
+    areCurrenciesLoading,
     currencyInfo,
     className,
     priceImpactParams,
     disableNonToken = false,
     showSetMax = false,
+    maxBalance,
     inputDisabled = false,
     inputTooltip,
     onCurrencySelection,
     onUserInput,
     allowsOffchainSigning,
+    isChainIdUnsupported,
     subsidyAndBalance = {
       subsidy: {
         tier: 0,
@@ -65,10 +73,8 @@ export function CurrencyInputPanel(props: CurrencyInputPanelProps) {
     isRateLoading,
   } = props
 
-  const isSupportedNetwork = isSupportedChainId(props.chainId as number | undefined)
-  const { priceImpact, loading: priceImpactLoading } = priceImpactParams || {}
   const { field, currency, balance, fiatAmount, amount, isIndependent, receiveAmountInfo } = currencyInfo
-  const disabled = props.disabled || !isSupportedNetwork
+  const disabled = !!props.disabled || isChainIdUnsupported
   const viewAmount = formatInputAmount(amount, balance, isIndependent)
   const [isCurrencySearchModalOpen, setCurrencySearchModalOpen] = useState(false)
   const [typedValue, setTypedValue] = useState(viewAmount)
@@ -87,14 +93,13 @@ export function CurrencyInputPanel(props: CurrencyInputPanelProps) {
     [onUserInput, field]
   )
   const handleMaxInput = useCallback(() => {
-    const maxBalance = maxAmountSpend(balance || undefined)
     if (!maxBalance) {
       return
     }
 
     onUserInputDispatch(maxBalance.toExact())
     setMaxSellTokensAnalytics()
-  }, [balance, onUserInputDispatch])
+  }, [maxBalance, onUserInputDispatch])
 
   useEffect(() => {
     const areValuesSame = parseFloat(viewAmount) === parseFloat(typedValue)
@@ -113,16 +118,22 @@ export function CurrencyInputPanel(props: CurrencyInputPanelProps) {
   const numericalInput = (
     <styledEl.NumericalInput
       className="token-amount-input"
-      value={typedValue}
+      value={isChainIdUnsupported ? '' : typedValue}
       disabled={inputDisabled}
       onUserInput={onUserInputDispatch}
-      $loading={loading}
+      $loading={areCurrenciesLoading}
     />
   )
 
   return (
-    <>
-      <styledEl.Wrapper id={id} className={className} withReceiveAmountInfo={!!receiveAmountInfo} disabled={disabled}>
+    <styledEl.OuterWrapper>
+      <styledEl.Wrapper
+        id={id}
+        className={className}
+        withReceiveAmountInfo={!!receiveAmountInfo}
+        disabled={disabled}
+        inputDisabled={inputDisabled}
+      >
         {topLabel && <styledEl.CurrencyTopLabel>{topLabel}</styledEl.CurrencyTopLabel>}
 
         <styledEl.CurrencyInputBox>
@@ -130,7 +141,7 @@ export function CurrencyInputPanel(props: CurrencyInputPanelProps) {
             <CurrencySelectButton
               onClick={() => setCurrencySearchModalOpen(true)}
               currency={disabled ? undefined : currency || undefined}
-              loading={loading || disabled}
+              loading={areCurrenciesLoading || disabled}
             />
           </div>
           <div>
@@ -154,12 +165,7 @@ export function CurrencyInputPanel(props: CurrencyInputPanelProps) {
           </div>
           <div>
             <styledEl.FiatAmountText>
-              <FiatValue
-                isLoading={isRateLoading}
-                priceImpactLoading={priceImpactLoading}
-                fiatValue={fiatAmount}
-                priceImpact={priceImpact}
-              />
+              <FiatValue priceImpactParams={priceImpactParams} fiatValue={isRateLoading ? null : fiatAmount} />
             </styledEl.FiatAmountText>
           </div>
         </styledEl.CurrencyInputBox>
@@ -184,6 +190,6 @@ export function CurrencyInputPanel(props: CurrencyInputPanelProps) {
         showCurrencyAmount={true}
         disableNonToken={disableNonToken}
       />
-    </>
+    </styledEl.OuterWrapper>
   )
 }

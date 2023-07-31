@@ -1,15 +1,17 @@
-import { Trans } from '@lingui/macro'
-// eslint-disable-next-line no-restricted-imports
-import { t } from '@lingui/macro'
 import { ChangeEvent, Context, ReactNode, useCallback, useContext } from 'react'
+
+import { t, Trans } from '@lingui/macro'
 import styled, { DefaultTheme, ThemeContext } from 'styled-components/macro'
 
-import useENS from 'legacy/hooks/useENS'
-import { ExternalLink, ThemedText } from 'legacy/theme'
 import { AutoColumn } from 'legacy/components/Column'
 import { RowBetween } from 'legacy/components/Row'
+import useENS from 'legacy/hooks/useENS'
+import { ExternalLink, ThemedText } from 'legacy/theme'
 import { getBlockExplorerUrl as getExplorerLink } from 'legacy/utils'
+
 import { useWalletInfo } from 'modules/wallet'
+
+import { autofocus } from 'common/utils/autofocus'
 
 const InputPanel = styled.div`
   ${({ theme }) => theme.flexColumnNoWrap}
@@ -115,7 +117,7 @@ export function AddressInputPanel({
                 {label ?? <Trans>Recipient</Trans>}
               </ThemedText.Black>
               {address && chainId && (
-                <ExternalLink href={getExplorerLink(chainId, name ?? address, 'address')} style={{ fontSize: '14px' }}>
+                <ExternalLink href={getExplorerLink(chainId, 'address', name ?? address)} style={{ fontSize: '14px' }}>
                   <Trans>(View on Explorer)</Trans>
                 </ExternalLink>
               )}
@@ -132,6 +134,7 @@ export function AddressInputPanel({
               pattern="^(0x[a-fA-F0-9]{40})$"
               onChange={handleInput}
               value={value}
+              onFocus={autofocus}
             />
           </AutoColumn>
         </InputContainer>

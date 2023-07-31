@@ -1,13 +1,16 @@
-import { useWalletInfo } from 'modules/wallet'
+import { useEffect, useState } from 'react'
+
 import { useWeb3React } from '@web3-react/core'
+
 import useDebounce from 'legacy/hooks/useDebounce'
 import useIsWindowVisible from 'legacy/hooks/useIsWindowVisible'
-import { useEffect, useState } from 'react'
-import { useAppDispatch } from 'legacy/state/hooks'
-import { supportedChainId } from 'legacy/utils/supportedChainId'
-import { updateSelectedWallet } from 'legacy/state/user/reducer'
-import { updateChainId } from './reducer'
 import usePrevious from 'legacy/hooks/usePrevious'
+import { useAppDispatch } from 'legacy/state/hooks'
+import { updateSelectedWallet } from 'legacy/state/user/reducer'
+
+import { useWalletInfo } from 'modules/wallet'
+
+import { updateChainId } from './reducer'
 
 export default function Updater(): null {
   const { chainId } = useWalletInfo()
@@ -27,8 +30,7 @@ export default function Updater(): null {
   const debouncedChainId = useDebounce(activeChainId, 100)
 
   useEffect(() => {
-    const chainId = debouncedChainId ? supportedChainId(debouncedChainId) ?? null : null
-    dispatch(updateChainId({ chainId }))
+    dispatch(updateChainId({ chainId: debouncedChainId }))
   }, [dispatch, debouncedChainId])
 
   // This will remove selected wallet on disconnect

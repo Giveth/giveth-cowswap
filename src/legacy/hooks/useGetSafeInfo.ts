@@ -1,11 +1,15 @@
 import { useCallback } from 'react'
-import { useWeb3React } from '@web3-react/core'
-import { getSafeTransaction } from 'api/gnosisSafe'
+
 import { SafeMultisigTransactionResponse } from '@safe-global/safe-core-sdk-types'
-import { retry, RetryOptions } from 'legacy/utils/retry'
+import { useWeb3React } from '@web3-react/core'
+
 import { RetryResult } from 'types'
-import { supportedChainId } from 'legacy/utils/supportedChainId'
+
+import { retry, RetryOptions } from 'legacy/utils/retry'
+
 import { useWalletInfo } from 'modules/wallet'
+
+import { getSafeTransaction } from 'api/gnosisSafe'
 
 const DEFAULT_RETRY_OPTIONS: RetryOptions = { n: 3, minWait: 1000, maxWait: 3000 }
 
@@ -20,10 +24,6 @@ export function useGetSafeInfo(): GetSafeInfo {
       return retry(() => {
         if (!provider) {
           throw new Error('There is no provider to get Gnosis safe info')
-        }
-
-        if (chainId === undefined || !supportedChainId(chainId)) {
-          throw new Error('Unsupported chainId: ' + chainId)
         }
 
         return getSafeTransaction(chainId, hash, provider)

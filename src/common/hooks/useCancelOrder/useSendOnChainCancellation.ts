@@ -1,43 +1,52 @@
 import { useCallback } from 'react'
+
+import { useTransactionAdder } from 'legacy/state/enhancedTransactions/hooks'
 import { Order } from 'legacy/state/orders/actions'
 import { useRequestOrderCancellation, useSetOrderCancellationHash } from 'legacy/state/orders/hooks'
-import { useTransactionAdder } from 'legacy/state/enhancedTransactions/hooks'
-import { useWalletInfo } from 'modules/wallet'
-import { useGetOnChainCancellation } from './useGetOnChainCancellation'
+
 import { getIsEthFlowOrder } from 'modules/swap/containers/EthFlowStepper'
+import { useSetPartOrderCancelling } from 'modules/twap/hooks/useSetPartOrderCancelling'
+import { useWalletInfo } from 'modules/wallet'
+
+import { CancelledOrderInfo } from './onChainCancellation'
+import { useGetOnChainCancellation } from './useGetOnChainCancellation'
 
 export function useSendOnChainCancellation() {
   const { chainId } = useWalletInfo()
   const setOrderCancellationHash = useSetOrderCancellationHash()
   const cancelPendingOrder = useRequestOrderCancellation()
+  const setPartOrderCancelling = useSetPartOrderCancelling()
   const addTransaction = useTransactionAdder()
   const getOnChainCancellation = useGetOnChainCancellation()
 
-  return useCallback(
-    async (order: Order) => {
-      if (!chainId) {
-        return
-      }
+  const processCancelledOrder = useCallback(
+    ({ txHash, orderId, sellTokenAddress, sellTokenSymbol }: CancelledOrderInfo) => {
+      if (!chainId) return
 
-      const isEthFlowOrder = getIsEthFlowOrder(order)
-      const { sendTransaction } = await getOnChainCancellation(order)
+      const isEthFlowOrder = getIsEthFlowOrder(sellTokenAddress)
 
-      const receipt = await sendTransaction()
+      cancelPendingOrder({ id: orderId, chainId })
+      setOrderCancellationHash({ chainId, id: orderId, hash: txHash })
+      setPartOrderCancelling(orderId)
 
-      if (receipt?.hash) {
-        cancelPendingOrder({ id: order.id, chainId })
-        setOrderCancellationHash({ chainId, id: order.id, hash: receipt.hash })
-
-        if (isEthFlowOrder) {
-          addTransaction({ hash: receipt.hash, ethFlow: { orderId: order.id, subType: 'cancellation' } })
-        } else {
-          addTransaction({
-            hash: receipt.hash,
-            onChainCancellation: { orderId: order.id, sellTokenSymbol: order.inputToken.symbol || '' },
-          })
-        }
+      if (isEthFlowOrder) {
+        addTransaction({ hash: txHash, ethFlow: { orderId, subType: 'cancellation' } })
+      } else {
+        addTransaction({
+          hash: txHash,
+          onChainCancellation: { orderId, sellTokenSymbol: sellTokenSymbol || '' },
+        })
       }
     },
-    [addTransaction, getOnChainCancellation, cancelPendingOrder, chainId, setOrderCancellationHash]
+    [chainId, cancelPendingOrder, setOrderCancellationHash, addTransaction, setPartOrderCancelling]
+  )
+
+  return useCallback(
+    async (order: Order) => {
+      const { sendTransaction } = await getOnChainCancellation(order)
+
+      await sendTransaction(processCancelledOrder)
+    },
+    [processCancelledOrder, getOnChainCancellation]
   )
 }

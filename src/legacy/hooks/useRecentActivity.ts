@@ -1,12 +1,16 @@
 import { useMemo } from 'react'
-import { isTransactionRecent, useAllTransactions, useTransactionsByHash } from 'legacy/state/enhancedTransactions/hooks'
-import { useOrder, useOrders, useOrdersById, useCombinedPendingOrders } from 'legacy/state/orders/hooks'
-import { Order, OrderStatus } from 'legacy/state/orders/actions'
-import { EnhancedTransactionDetails } from 'legacy/state/enhancedTransactions/reducer'
-import { SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
-import { getDateTimestamp } from 'utils/time'
+
+import { OrderClass, SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
+
 import { MAXIMUM_ORDERS_TO_DISPLAY } from 'legacy/constants'
+import { isTransactionRecent, useAllTransactions, useTransactionsByHash } from 'legacy/state/enhancedTransactions/hooks'
+import { EnhancedTransactionDetails } from 'legacy/state/enhancedTransactions/reducer'
+import { Order, OrderStatus } from 'legacy/state/orders/actions'
+import { useCombinedPendingOrders, useOrder, useOrders, useOrdersById } from 'legacy/state/orders/hooks'
+
 import { useWalletInfo } from 'modules/wallet'
+
+import { getDateTimestamp } from 'utils/time'
 
 export interface AddedOrder extends Order {
   addedTime: number
@@ -43,22 +47,14 @@ enum TxReceiptStatus {
  * useRecentActivity
  * @description returns all RECENT (last day) transaction and orders in 2 arrays: pending and confirmed
  */
-export default function useRecentActivity() {
+export function useRecentActivity(): TransactionAndOrder[] {
   const { chainId, account } = useWalletInfo()
   const allTransactions = useAllTransactions()
-  const allNonEmptyOrders = useOrders({ chainId })
+  const allNonEmptyOrders = useOrders(chainId, account, OrderClass.MARKET)
 
   const recentOrdersAdjusted = useMemo<TransactionAndOrder[]>(() => {
-    if (!chainId || !account) {
-      return []
-    }
-
-    const accountLowerCase = account.toLowerCase()
-
     return (
       allNonEmptyOrders
-        // only show orders for connected account
-        .filter((order) => order.owner.toLowerCase() === accountLowerCase)
         .map((order) =>
           // we need to essentially match TransactionDetails type which uses "addedTime" for date checking
           // and time in MS vs ISO string as Orders uses
@@ -72,7 +68,7 @@ export default function useRecentActivity() {
         // show at most MAXIMUM_ORDERS_TO_DISPLAY regular orders, and as much pending as there are
         .filter((order, index) => index < MAXIMUM_ORDERS_TO_DISPLAY || order.status === OrderStatus.PENDING)
     )
-  }, [account, allNonEmptyOrders, chainId])
+  }, [allNonEmptyOrders])
 
   const recentTransactionsAdjusted = useMemo<TransactionAndOrder[]>(() => {
     if (!account) {
@@ -218,18 +214,15 @@ function createActivityDescriptor(tx?: EnhancedTransactionDetails, order?: Order
   }
 }
 
-export function useMultipleActivityDescriptors({
-  chainId,
-  ids,
-}: UseActivityDescriptionParams): ActivityDescriptors[] | null {
+export function useMultipleActivityDescriptors({ chainId, ids }: UseActivityDescriptionParams): ActivityDescriptors[] {
   const txs = useTransactionsByHash({ hashes: ids })
   const orders = useOrdersById({ chainId, ids })
 
   return useMemo(() => {
-    if (!chainId) return null
+    if (!chainId) return []
 
     return ids.reduce<ActivityDescriptors[]>((acc, id) => {
-      const activity = createActivityDescriptor(txs[id], orders[id])
+      const activity = createActivityDescriptor(txs[id], orders?.[id])
       if (activity) {
         acc.push(activity)
       }

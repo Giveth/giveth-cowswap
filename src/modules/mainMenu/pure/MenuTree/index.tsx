@@ -1,15 +1,16 @@
+import SVG from 'react-inlinesvg'
+
+import IMAGE_MOON from 'legacy/assets/cow-swap/moon.svg'
+import IMAGE_SUN from 'legacy/assets/cow-swap/sun.svg'
 import { HeaderLinks as Wrapper, StyledNavLink } from 'legacy/components/Header/styled'
 import MenuDropdown from 'legacy/components/MenuDropdown'
 import { MenuSection, MenuTitle } from 'legacy/components/MenuDropdown/styled'
-import SVG from 'react-inlinesvg'
 import { ExternalLink as ExternalLinkComponent } from 'legacy/theme/components'
 
-// Assets
-import IMAGE_MOON from 'legacy/assets/cow-swap/moon.svg'
-import IMAGE_SUN from 'legacy/assets/cow-swap/sun.svg'
 import {
   DropDownItem,
-  DynamicLink,
+  ParametrizedLink,
+  CustomItem,
   ExternalLink,
   InternalLink,
   MainMenuContext,
@@ -18,7 +19,10 @@ import {
   MenuTreeItem,
 } from 'modules/mainMenu/types'
 import { parameterizeTradeRoute } from 'modules/trade/utils/parameterizeTradeRoute'
-import { Routes } from 'constants/routes'
+
+import { RoutesValues } from 'common/constants/routes'
+
+// Assets
 
 // TODO: decompose the file
 
@@ -41,17 +45,22 @@ function MenuImage(props: MenuImageProps) {
 }
 
 interface InternalExternalLinkProps {
-  link: InternalLink | ExternalLink | DynamicLink
+  link: InternalLink | ExternalLink | ParametrizedLink | CustomItem
   context: MainMenuContext
 }
 
 function Link({ link, context }: InternalExternalLinkProps) {
+  if (link.kind === MenuItemKind.CUSTOM_ITEM) {
+    const { Item: LinkComponent } = link
+    return <>{LinkComponent()}</>
+  }
+
   const { kind, title, url, iconSVG, icon } = link
   const menuImage = <MenuImage title={title} icon={icon} iconSVG={iconSVG} />
   const isExternal = kind === MenuItemKind.EXTERNAL_LINK
-  const isDynamic = kind === MenuItemKind.DYNAMIC_LINK
+  const isDynamic = kind === MenuItemKind.PARAMETRIZED_LINK
   const { handleMobileMenuOnClick, tradeContext } = context
-  const internalUrl = isDynamic ? parameterizeTradeRoute(tradeContext, url as Routes) : url
+  const internalUrl = isDynamic ? parameterizeTradeRoute(tradeContext, url as RoutesValues) : url
 
   if (isExternal) {
     return (
@@ -143,10 +152,12 @@ function MenuItemWithDropDown(props: MenuItemWithDropDownProps) {
       return <DropDown item={menuItem} context={context} />
 
     case undefined: // INTERNAL
-    case MenuItemKind.DYNAMIC_LINK:
+    case MenuItemKind.PARAMETRIZED_LINK:
     case MenuItemKind.EXTERNAL_LINK:
       // Render Internal/External links
       return <Link link={menuItem} context={context} />
+    case MenuItemKind.CUSTOM_ITEM:
+      return <>{menuItem.Item}</>
     default:
       return null
   }

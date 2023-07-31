@@ -1,14 +1,14 @@
-import BigNumber from 'bignumber.js'
-import { Token, Fraction, Percent } from '@uniswap/sdk-core'
-import ethFlowBarnJson from '@cowprotocol/ethflowcontract/networks.barn.json'
-import ethFlowProdJson from '@cowprotocol/ethflowcontract/networks.prod.json'
+import { ethFlowBarnJson, ethFlowProdJson } from '@cowprotocol/abis'
 import networksJson from '@cowprotocol/contracts/networks.json'
+import { IpfsConfig, SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
+import { Fraction, Percent, Token } from '@uniswap/sdk-core'
 
-import { SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
+import BigNumber from 'bignumber.js'
 import ms from 'ms.macro'
 
-import { IpfsConfig } from '@cowprotocol/cow-sdk'
 import { PINATA_API_KEY, PINATA_SECRET_API_KEY } from 'legacy/constants/ipfs'
+
+// TODO: move those consts to src/constants/common
 
 const { GPv2Settlement, GPv2VaultRelayer } = networksJson
 const EthFlowBarn = ethFlowBarnJson.CoWSwapEthFlow
@@ -139,7 +139,7 @@ export const FLASHBOTS_LINK = 'https://explore.flashbots.net/'
 export const GAS_PRICE_UPDATE_THRESHOLD = ms`5s`
 export const GAS_FEE_ENDPOINTS = {
   [ChainId.MAINNET]: 'https://api.blocknative.com/gasprices/blockprices',
-  [ChainId.GNOSIS_CHAIN]: 'https://blockscout.com/xdai/mainnet/api/v1/gas-price-oracle',
+  [ChainId.GNOSIS_CHAIN]: 'https://gnosis.blockscout.com/api/v1/gas-price-oracle',
   [ChainId.GOERLI]: '',
 }
 export const GAS_API_KEYS = {
@@ -210,3 +210,9 @@ export const FAQ_MENU_LINKS = [
 
 // Min USD value to show surplus
 export const MIN_FIAT_SURPLUS_VALUE = 0.01
+
+// Min FIAT value for displaying the surplus modal
+export const MIN_FIAT_SURPLUS_VALUE_MODAL = 1
+
+// Min surplus value in units for displaying the surplus modal when FIAT value is not available
+export const MIN_SURPLUS_UNITS = 0.01

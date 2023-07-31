@@ -1,11 +1,21 @@
+import { useSetAtom } from 'jotai'
 import { useCallback, useEffect, useRef } from 'react'
+
 import { timestamp } from '@cowprotocol/contracts'
-import { useWalletInfo } from 'modules/wallet'
-import { useOnlyPendingOrders, useSetIsOrderUnfillable } from 'legacy/state/orders/hooks'
+import { OrderClass, SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
+import { Currency, CurrencyAmount, Price } from '@uniswap/sdk-core'
+
+import { FeeInformation, PriceInformation } from 'types'
+
+import { priceOutOfRangeAnalytics } from 'legacy/components/analytics'
+import { NATIVE_CURRENCY_BUY_ADDRESS } from 'legacy/constants'
+import { WRAPPED_NATIVE_CURRENCY } from 'legacy/constants/tokens'
+import { useGetGpPriceStrategy } from 'legacy/hooks/useGetGpPriceStrategy'
+import useIsWindowVisible from 'legacy/hooks/useIsWindowVisible'
+import { GpPriceStrategy } from 'legacy/state/gas/atoms'
 import { Order } from 'legacy/state/orders/actions'
-import { OrderClass } from '@cowprotocol/cow-sdk'
-import { SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
-import { getBestQuote } from 'legacy/utils/price'
+import { PENDING_ORDERS_PRICE_CHECK_POLL_INTERVAL } from 'legacy/state/orders/consts'
+import { useOnlyPendingOrders, useSetIsOrderUnfillable } from 'legacy/state/orders/hooks'
 import {
   getEstimatedExecutionPrice,
   getOrderMarketPrice,
@@ -13,19 +23,12 @@ import {
   isOrderUnfillable,
 } from 'legacy/state/orders/utils'
 import { getPromiseFulfilledValue } from 'legacy/utils/misc'
-import { FeeInformation, PriceInformation } from 'types'
-import { priceOutOfRangeAnalytics } from 'legacy/components/analytics'
-import { supportedChainId } from 'legacy/utils/supportedChainId'
-import { NATIVE_CURRENCY_BUY_ADDRESS } from 'legacy/constants'
-import { WRAPPED_NATIVE_CURRENCY } from 'legacy/constants/tokens'
-import { PRICE_QUOTE_VALID_TO_TIME } from 'constants/quote'
-import { useUpdateAtom } from 'jotai/utils'
+import { getBestQuote } from 'legacy/utils/price'
+
 import { updatePendingOrderPricesAtom } from 'modules/orders/state/pendingOrdersPricesAtom'
-import { Currency, CurrencyAmount, Price } from '@uniswap/sdk-core'
-import { PENDING_ORDERS_PRICE_CHECK_POLL_INTERVAL } from 'legacy/state/orders/consts'
-import useIsWindowVisible from 'legacy/hooks/useIsWindowVisible'
-import { GpPriceStrategy } from 'legacy/state/gas/atoms'
-import { useGetGpPriceStrategy } from 'legacy/hooks/useGetGpPriceStrategy'
+import { useWalletInfo } from 'modules/wallet'
+
+import { PRICE_QUOTE_VALID_TO_TIME } from 'common/constants/quote'
 
 /**
  * Thin wrapper around `getBestPrice` that builds the params and returns null on failure
@@ -83,12 +86,11 @@ async function _getOrderPrice(chainId: ChainId, order: Order, strategy: GpPriceS
  * Updater that checks whether pending orders are still "fillable"
  */
 export function UnfillableOrdersUpdater(): null {
-  const { chainId: _chainId, account } = useWalletInfo()
-  const chainId = supportedChainId(_chainId)
-  const updatePendingOrderPrices = useUpdateAtom(updatePendingOrderPricesAtom)
+  const { chainId, account } = useWalletInfo()
+  const updatePendingOrderPrices = useSetAtom(updatePendingOrderPricesAtom)
   const isWindowVisible = useIsWindowVisible()
 
-  const pending = useOnlyPendingOrders({ chainId })
+  const pending = useOnlyPendingOrders(chainId, OrderClass.LIMIT)
   const setIsOrderUnfillable = useSetIsOrderUnfillable()
   const strategy = useGetGpPriceStrategy()
 
@@ -102,7 +104,7 @@ export function UnfillableOrdersUpdater(): null {
       order: Order,
       fee: FeeInformation | null,
       marketPrice: Price<Currency, Currency>,
-      estimatedExecutionPrice: Price<Currency, Currency>
+      estimatedExecutionPrice: Price<Currency, Currency> | null
     ) => {
       if (!fee?.amount) return
 

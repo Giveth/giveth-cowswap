@@ -1,15 +1,19 @@
-import { useTradeStateFromUrl } from './useTradeStateFromUrl'
-import { useResetStateWithSymbolDuplication } from './useResetStateWithSymbolDuplication'
-import { useTradeState } from '../useTradeState'
 import { useEffect, useState } from 'react'
-import { switchChain } from 'modules/wallet/web3-react/hooks/switchChain'
-import { useWeb3React } from '@web3-react/core'
-import { useWalletInfo } from 'modules/wallet'
-import { useTradeNavigate } from 'modules/trade/hooks/useTradeNavigate'
-import usePrevious from 'legacy/hooks/usePrevious'
-import { getDefaultTradeRawState, TradeRawState } from 'modules/trade/types/TradeRawState'
-import { isSupportedChainId } from 'lib/hooks/routing/clientSideSmartOrderRouter'
+
 import { SupportedChainId } from '@cowprotocol/cow-sdk'
+import { useWeb3React } from '@web3-react/core'
+
+import usePrevious from 'legacy/hooks/usePrevious'
+
+import { useTradeNavigate } from 'modules/trade/hooks/useTradeNavigate'
+import { getDefaultTradeRawState, TradeRawState } from 'modules/trade/types/TradeRawState'
+import { useWalletInfo } from 'modules/wallet'
+import { switchChain } from 'modules/wallet/web3-react/hooks/switchChain'
+
+import { useResetStateWithSymbolDuplication } from './useResetStateWithSymbolDuplication'
+import { useTradeStateFromUrl } from './useTradeStateFromUrl'
+
+import { useTradeState } from '../useTradeState'
 
 export function useSetupTradeState(): void {
   const { chainId: providerChainId, account } = useWalletInfo()
@@ -29,9 +33,7 @@ export function useSetupTradeState(): void {
   const urlChainId = tradeStateFromUrl.chainId
   const prevTradeStateFromUrl = usePrevious(tradeStateFromUrl)
 
-  const chainIdIsNotSupported = !isSupportedChainId(urlChainId)
-  const currentChainId =
-    !urlChainId || chainIdIsNotSupported ? prevProviderChainId || SupportedChainId.MAINNET : urlChainId
+  const currentChainId = !urlChainId ? prevProviderChainId || SupportedChainId.MAINNET : urlChainId
 
   /**
    * On URL parameter changes
@@ -58,9 +60,6 @@ export function useSetupTradeState(): void {
    *  - apply the URL changes only if user accepted network changes in the wallet
    */
   useEffect(() => {
-    // Do nothing while network change in progress
-    if (rememberedUrlState) return
-
     const { inputCurrencyId, outputCurrencyId } = tradeStateFromUrl
     const providerAndUrlChainIdMismatch = currentChainId !== prevProviderChainId
 
@@ -76,6 +75,17 @@ export function useSetupTradeState(): void {
 
     const defaultState = getDefaultTradeRawState(currentChainId)
 
+    // While network change in progress
+    if (rememberedUrlState) {
+      // When only chainId is changed, then do nothing
+      if (onlyChainIdIsChanged) {
+        return
+        // When something besides chainId is changed, then reset remembered URL state
+      } else {
+        setRememberedUrlState(null)
+      }
+    }
+
     // Applying of the remembered state after network successfully changed
     if (isWalletConnected && providerAndUrlChainIdMismatch && prevTradeStateFromUrl) {
       setRememberedUrlState(tradeStateFromUrl)
@@ -89,12 +99,10 @@ export function useSetupTradeState(): void {
       return
     }
 
-    if (chainIdIsNotSupported || sameTokens || tokensAreEmpty || onlyChainIdIsChanged) {
+    if (sameTokens || tokensAreEmpty || onlyChainIdIsChanged) {
       tradeNavigate(currentChainId, defaultState)
 
-      if (chainIdIsNotSupported) {
-        console.debug('[TRADE STATE]', 'Url contains invalid chainId, resetting')
-      } else if (sameTokens) {
+      if (sameTokens) {
         console.debug('[TRADE STATE]', 'Url contains invalid tokens, resetting')
       } else if (tokensAreEmpty) {
         console.debug('[TRADE STATE]', 'Url does not contain both tokens, resetting')
@@ -152,7 +160,6 @@ export function useSetupTradeState(): void {
   useEffect(() => {
     if (providerChainId === urlChainId) return
     if (!providerChainId || providerChainId === prevProviderChainId) return
-    if (!isSupportedChainId(providerChainId)) return
 
     if (rememberedUrlState) {
       setRememberedUrlState(null)

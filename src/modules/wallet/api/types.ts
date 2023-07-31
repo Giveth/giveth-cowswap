@@ -3,8 +3,10 @@ import { SafeInfoResponse } from '@safe-global/api-kit'
 
 export enum ConnectionType {
   INJECTED = 'INJECTED',
+  INJECTED_WIDGET = 'INJECTED_WIDGET',
   COINBASE_WALLET = 'COINBASE_WALLET',
   WALLET_CONNECT = 'WALLET_CONNECT',
+  WALLET_CONNECT_V2 = 'WALLET_CONNECT_V2',
   FORTMATIC = 'FORTMATIC',
   NETWORK = 'NETWORK',
   GNOSIS_SAFE = 'GNOSIS_SAFE',
@@ -20,7 +22,7 @@ export enum ConnectionType {
 export const BACKFILLABLE_WALLETS = [ConnectionType.INJECTED, ConnectionType.WALLET_CONNECT]
 
 export interface WalletInfo {
-  chainId?: SupportedChainId
+  chainId: SupportedChainId
   account?: string
   active?: boolean
 }

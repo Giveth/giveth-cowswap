@@ -1,26 +1,37 @@
-import { useIsSafeApp } from 'modules/wallet'
+import { useAtomValue } from 'jotai'
+import { useMemo } from 'react'
+
 import { DEFAULT_APP_CODE, SAFE_APP_CODE } from 'legacy/constants'
-import { useAtomValue, useUpdateAtom } from 'jotai/utils'
-import { addAppDataToUploadQueueAtom, appDataInfoAtom } from './state/atoms'
+
+import { useIsSafeApp } from 'modules/wallet'
+
+import { isInjectedWidget } from 'common/utils/isInjectedWidget'
+
+import { appDataInfoAtom } from './state/atoms'
 import { AppDataInfo } from './types'
 
-const APP_CODE = process.env.REACT_APP_APP_CODE
+import { injectedWidgetMetaDataAtom } from '../injectedWidget/state/injectedWidgetMetaDataAtom'
 
-export function useUploadAppData() {
-  return useUpdateAtom(addAppDataToUploadQueueAtom)
-}
+const APP_CODE = process.env.REACT_APP_APP_CODE
 
 export function useAppData(): AppDataInfo | null {
   return useAtomValue(appDataInfoAtom)
 }
 
-export function useAppCode(): string {
+export function useAppCode(): string | null {
+  const injectedWidgetMetaData = useAtomValue(injectedWidgetMetaDataAtom)
   const isSafeApp = useIsSafeApp()
 
-  if (APP_CODE) {
-    // appCode coming from env var has priority
-    return APP_CODE
-  }
+  return useMemo(() => {
+    if (isInjectedWidget()) {
+      return injectedWidgetMetaData?.appKey || null
+    }
 
-  return isSafeApp ? SAFE_APP_CODE : DEFAULT_APP_CODE
+    if (APP_CODE) {
+      // appCode coming from env var has priority
+      return APP_CODE
+    }
+
+    return isSafeApp ? SAFE_APP_CODE : DEFAULT_APP_CODE
+  }, [isSafeApp, injectedWidgetMetaData])
 }

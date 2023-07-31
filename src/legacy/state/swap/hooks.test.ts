@@ -1,11 +1,9 @@
-/**
- * @jest-environment ./custom-test-env.js
- */
-
 import { parse } from 'qs'
 
 import { Field } from './actions'
 import { queryParametersToSwapState } from './hooks'
+
+jest.mock('legacy/components/analytics/hooks/useAnalyticsReporter.ts')
 
 describe('hooks', () => {
   describe('#queryParametersToSwapState', () => {
@@ -27,6 +25,7 @@ describe('hooks', () => {
         independentField: Field.OUTPUT,
         recipient: null,
         withDonation: false,
+        recipientAddress: null,
       })
     })
 
@@ -45,6 +44,7 @@ describe('hooks', () => {
         independentField: Field.INPUT,
         recipient: null,
         withDonation: false,
+        recipientAddress: null,
       })
     })
 
@@ -63,6 +63,7 @@ describe('hooks', () => {
         independentField: Field.INPUT,
         recipient: null,
         withDonation: false,
+        recipientAddress: null,
       })
     })
 
@@ -81,6 +82,7 @@ describe('hooks', () => {
         independentField: Field.INPUT,
         recipient: null,
         withDonation: false,
+        recipientAddress: null,
       })
     })
 
@@ -102,6 +104,7 @@ describe('hooks', () => {
         independentField: Field.INPUT,
         recipient: '0x0fF2D1eFd7A57B7562b2bf27F3f37899dB27F4a5',
         withDonation: false,
+        recipientAddress: null,
       })
     })
     test('accepts any recipient', () => {
@@ -122,6 +125,7 @@ describe('hooks', () => {
         independentField: Field.INPUT,
         recipient: 'bob.argent.xyz',
         withDonation: false,
+        recipientAddress: null,
       })
     })
   })

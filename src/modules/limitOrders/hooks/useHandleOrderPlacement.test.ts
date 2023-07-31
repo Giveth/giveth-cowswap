@@ -1,23 +1,32 @@
+import { useAtomValue, useSetAtom } from 'jotai'
+
 import { renderHook } from '@testing-library/react-hooks'
+
 import { PriceImpact } from 'legacy/hooks/usePriceImpact'
-import { useHandleOrderPlacement } from './useHandleOrderPlacement'
-import { tradeFlow } from 'modules/limitOrders/services/tradeFlow'
-import { safeBundleFlow } from 'modules/limitOrders/services/safeBundleFlow'
-import { TradeFlowContext } from 'modules/limitOrders/services/types'
-import { defaultLimitOrdersSettings } from '../state/limitOrdersSettingsAtom'
-import { limitOrdersRawStateAtom, updateLimitOrdersRawStateAtom } from '../state/limitOrdersRawStateAtom'
-import { useAtomValue, useUpdateAtom } from 'jotai/utils'
-import { withModalProvider } from 'utils/withModalProvider'
+
 import { useSafeBundleFlowContext } from 'modules/limitOrders/hooks/useSafeBundleFlowContext'
+import { safeBundleFlow } from 'modules/limitOrders/services/safeBundleFlow'
+import { tradeFlow } from 'modules/limitOrders/services/tradeFlow'
+import { TradeFlowContext } from 'modules/limitOrders/services/types'
+
+import { useIsTxBundlingEnabled } from 'common/hooks/featureFlags/useIsTxBundlingEnabled'
 import { useNeedsApproval } from 'common/hooks/useNeedsApproval'
-import { useIsTxBundlingEnabled } from 'common/hooks/useIsTxBundlingEnabled'
+import { withModalProvider } from 'utils/withModalProvider'
+
+import { useHandleOrderPlacement } from './useHandleOrderPlacement'
+
+import { TradeConfirmActions } from '../../trade'
+import { TradeAmounts } from '../../trade/types/TradeAmounts'
+import { limitOrdersRawStateAtom, updateLimitOrdersRawStateAtom } from '../state/limitOrdersRawStateAtom'
+import { defaultLimitOrdersSettings } from '../state/limitOrdersSettingsAtom'
 
 jest.mock('modules/limitOrders/services/tradeFlow')
 jest.mock('modules/limitOrders/services/safeBundleFlow')
 
 jest.mock('modules/limitOrders/hooks/useSafeBundleFlowContext')
 jest.mock('common/hooks/useNeedsApproval')
-jest.mock('common/hooks/useIsTxBundlingEnabled')
+jest.mock('common/hooks/featureFlags/useIsTxBundlingEnabled')
+jest.mock('legacy/components/analytics/hooks/useAnalyticsReporter.ts')
 
 const mockTradeFlow = tradeFlow as jest.MockedFunction<typeof tradeFlow>
 const mockSafeBundleFlow = safeBundleFlow as jest.MockedFunction<typeof safeBundleFlow>
@@ -33,11 +42,28 @@ const priceImpactMock: PriceImpact = {
   loading: false,
 }
 const recipient = '0xd8da6bf26964af9d7eed9e03e53415d37aa96045'
+const tradeConfirmActions: TradeConfirmActions = {
+  onSign(pendingTrade: TradeAmounts) {
+    console.log('onSign', pendingTrade)
+  },
+  onError(error: string) {
+    console.log('onError', error)
+  },
+  onSuccess(transactionHash: string) {
+    console.log('onSuccess', transactionHash)
+  },
+  onDismiss() {
+    console.log('onDismiss')
+  },
+  onOpen() {
+    console.log('onOpen')
+  },
+}
 
 describe('useHandleOrderPlacement', () => {
   beforeEach(() => {
-    mockTradeFlow.mockImplementation(() => Promise.resolve(null))
-    mockSafeBundleFlow.mockImplementation(() => Promise.resolve(null))
+    mockTradeFlow.mockImplementation(() => Promise.resolve(''))
+    mockSafeBundleFlow.mockImplementation(() => Promise.resolve(''))
     mockUseSafeBundleFlowContext.mockImplementation(() => null)
     mockUseNeedsApproval.mockImplementation(() => false)
     mockUseIsTxBundlingEnabled.mockImplementation(() => false)
@@ -47,7 +73,7 @@ describe('useHandleOrderPlacement', () => {
     // Arrange
     renderHook(
       () => {
-        const updateLimitOrdersState = useUpdateAtom(updateLimitOrdersRawStateAtom)
+        const updateLimitOrdersState = useSetAtom(updateLimitOrdersRawStateAtom)
 
         updateLimitOrdersState({ recipient })
       },
@@ -62,7 +88,7 @@ describe('useHandleOrderPlacement', () => {
 
     // Act
     const { result } = renderHook(
-      () => useHandleOrderPlacement(tradeContextMock, priceImpactMock, defaultLimitOrdersSettings, {}),
+      () => useHandleOrderPlacement(tradeContextMock, priceImpactMock, defaultLimitOrdersSettings, tradeConfirmActions),
       { wrapper: withModalProvider }
     )
     await result.current()

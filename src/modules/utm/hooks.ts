@@ -1,8 +1,10 @@
-import { useEffect } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { UtmParams } from './types'
 import { useAtomValue, useSetAtom } from 'jotai'
+import { useEffect } from 'react'
+
+import { useLocation, useNavigate } from 'react-router-dom'
+
 import { utmAtom } from './state'
+import { UtmParams } from './types'
 
 const UTM_SOURCE_PARAM = 'utm_source'
 const UTM_MEDIUM_PARAM = 'utm_medium'
@@ -55,7 +57,7 @@ export function useInitializeUtm(): void {
     () => {
       const searchParams = new URLSearchParams(search)
       const utm = getUtmParams(searchParams)
-      if (utm.utmCampaign || utm.utmCampaign || utm.utmContent || utm.utmMedium || utm.utmSource) {
+      if (utm.utmSource || utm.utmMedium || utm.utmCampaign || utm.utmContent || utm.utmTerm) {
         // Only overrides the UTM if the URL includes at least one UTM param
         setUtm(utm)
       }

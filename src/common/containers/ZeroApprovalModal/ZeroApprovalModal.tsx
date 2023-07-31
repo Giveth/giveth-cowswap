@@ -1,35 +1,45 @@
-import { useWalletDetails, useWalletInfo } from 'modules/wallet'
+import { useCallback, useEffect, useState } from 'react'
+
+import { useWalletDetails, useWalletDisplayedAddress } from 'modules/wallet'
+
 import { ConfirmationPendingContent } from 'common/pure/ConfirmationPendingContent'
-import { shortenAddress } from 'legacy/utils'
-import { GpModal } from 'common/pure/Modal'
-import { useWeb3React } from '@web3-react/core'
-import { getStatusIcon } from 'modules/account/containers/AccountDetails'
+import { CowModal } from 'common/pure/Modal'
 import { useZeroApprovalState } from 'common/state/useZeroApprovalState'
-import { useCallback } from 'react'
+
+import { useWalletStatusIcon } from '../../hooks/useWalletStatusIcon'
 
 interface ZeroApprovalModalProps {
   onDismiss?: () => void
 }
 
 export function ZeroApprovalModal({ onDismiss = () => {} }: ZeroApprovalModalProps) {
-  const { account } = useWalletInfo()
   const walletDetails = useWalletDetails()
-  const { connector } = useWeb3React()
+  const walletAddress = useWalletDisplayedAddress()
   const { isApproving, currency } = useZeroApprovalState()
+  const statusIcon = useWalletStatusIcon()
+  const [hasUserClosedModal, setHasUserClosedModal] = useState(false)
+
+  const shouldShow = isApproving && !hasUserClosedModal
 
   const handleDismiss = useCallback(() => {
+    setHasUserClosedModal(true)
     onDismiss()
   }, [onDismiss])
 
-  const { walletName, ensName } = walletDetails
-  const walletAddress = ensName || (account ? shortenAddress(account) : '')
+  useEffect(() => {
+    if (!isApproving && hasUserClosedModal) {
+      setHasUserClosedModal(false)
+    }
+  }, [isApproving, hasUserClosedModal])
+
+  const { walletName } = walletDetails
   const symbol = currency?.symbol?.toUpperCase() ?? 'Unknown Currency' // This should never happen.
 
   return (
-    <GpModal isOpen={isApproving} onDismiss={handleDismiss}>
+    <CowModal isOpen={shouldShow} onDismiss={handleDismiss}>
       <ConfirmationPendingContent
-        onDismiss={onDismiss}
-        statusIcon={getStatusIcon(connector, walletDetails, 56)}
+        onDismiss={handleDismiss}
+        statusIcon={statusIcon}
         title={
           <>
             Reset <strong>{symbol}</strong> allowance
@@ -41,6 +51,6 @@ export function ZeroApprovalModal({ onDismiss = () => {} }: ZeroApprovalModalPro
         walletAddress={walletAddress}
         operationLabel="token approval"
       />
-    </GpModal>
+    </CowModal>
   )
 }
