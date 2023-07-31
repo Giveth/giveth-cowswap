@@ -38,7 +38,7 @@ import {
   SwapWarningsTopProps,
 } from 'modules/swap/pure/warnings'
 import useCurrencyBalance from 'modules/tokens/hooks/useCurrencyBalance'
-import { TradeWidget, TradeWidgetContainer, useTradePriceImpact } from 'modules/trade'
+import { TradeWidget, TradeWidgetContainer, useSetupTradeState, useTradePriceImpact } from 'modules/trade'
 import { useIsWrapOrUnwrap } from 'modules/trade/hooks/useIsWrapOrUnwrap'
 import { useTradeRouteContext } from 'modules/trade/hooks/useTradeRouteContext'
 import { useWrappedToken } from 'modules/trade/hooks/useWrappedToken'

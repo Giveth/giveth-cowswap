@@ -255,7 +255,7 @@
     "jsdom": "~20.0.3",
     "launchdarkly-js-client-sdk": "^3.1.2",
     "nx": "16.3.2",
-    "nx-cloud": "^16.0.5",
+    "nx-cloud": "latest",
     "patch-package": "^6.5.1",
     "prettier": "^2.6.2",
     "react-cosmos": "^5.7.2",

@@ -1,3 +1,5 @@
+import React from 'react'
+
 import { Navigate, useLocation, useParams } from 'react-router-dom'
 
 import { WRAPPED_NATIVE_CURRENCY as WETH } from 'legacy/constants/tokens'
