@@ -113,13 +113,11 @@ const DonationInput = () => {
             min={0}
             max={100}
             step={0.01}
-            value={donationPercentage}
+            defaultValue={donationPercentage}
             onChange={(e) => {
               let input = Number(e.target.value)
-              if (input < 100) {
-                input = Number(Number(input).toFixed(3))
-                setDonationPercentage(input)
-              }
+              input = Number(Number(input).toFixed(3))
+              setDonationPercentage(input)
             }}
           />
           <PercentageSymbol>%</PercentageSymbol>
