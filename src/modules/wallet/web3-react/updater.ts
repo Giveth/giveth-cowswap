@@ -1,37 +1,40 @@
-import { GnosisSafeInfo, WalletDetails, WalletInfo } from '../api/types'
-import useENSName from 'legacy/hooks/useENSName'
-import { useWeb3React } from '@web3-react/core'
-import { useIsSmartContractWallet } from 'common/hooks/useIsSmartContractWallet'
-import { useIsSafeWallet, useWalletMetaData } from 'modules/wallet'
+import { useSetAtom } from 'jotai'
 import { useEffect, useMemo, useState } from 'react'
 
+import { useWeb3React } from '@web3-react/core'
+
 import { UNSUPPORTED_WC_WALLETS } from 'legacy/constants'
-import { useSetAtom } from 'jotai'
-import { gnosisSafeInfoAtom, walletDetailsAtom, walletInfoAtom } from '../api/state'
-import { getSafeInfo } from 'api/gnosisSafe'
-import { useSafeAppsSdkInfo } from './hooks/useSafeAppsSdkInfo'
+import useENSName from 'legacy/hooks/useENSName'
+
+import { useIsSafeWallet, useWalletMetaData } from 'modules/wallet'
 import { getWalletType } from 'modules/wallet/api/utils/getWalletType'
+
+import { getSafeInfo } from 'api/gnosisSafe'
+import { useIsProviderNetworkUnsupported } from 'common/hooks/useIsProviderNetworkUnsupported'
+import { useIsSmartContractWallet } from 'common/hooks/useIsSmartContractWallet'
+import { getCurrentChainIdFromUrl } from 'utils/getCurrentChainIdFromUrl'
+
+import { useSafeAppsSdkInfo } from './hooks/useSafeAppsSdkInfo'
+
+import { gnosisSafeInfoAtom, walletDetailsAtom, walletInfoAtom } from '../api/state'
+import { GnosisSafeInfo, WalletDetails, WalletInfo } from '../api/types'
 import { getWalletTypeLabel } from '../api/utils/getWalletTypeLabel'
 
 function _checkIsSupportedWallet(walletName?: string): boolean {
-  if (walletName && UNSUPPORTED_WC_WALLETS.has(walletName)) {
-    // Unsupported wallet
-    return false
-  }
-
-  return true
+  return !(walletName && UNSUPPORTED_WC_WALLETS.has(walletName))
 }
 
 function _useWalletInfo(): WalletInfo {
   const { account, chainId, isActive: active } = useWeb3React()
+  const isChainIdUnsupported = useIsProviderNetworkUnsupported()
 
   return useMemo(
     () => ({
-      chainId,
+      chainId: isChainIdUnsupported || !chainId ? getCurrentChainIdFromUrl() : chainId,
       active,
       account,
     }),
-    [chainId, active, account]
+    [chainId, active, account, isChainIdUnsupported]
   )
 }
 

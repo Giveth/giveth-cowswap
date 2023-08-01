@@ -1,17 +1,31 @@
-import { OrderBookApiError, PriceQuality, SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
-import { OrderKind } from '@cowprotocol/cow-sdk'
-import { isBarn, isDev, isLocal, isPr } from 'legacy/utils/environments'
+import {
+  Address,
+  CowEnv,
+  EnrichedOrder,
+  NativePriceResponse,
+  OrderBookApiError,
+  OrderKind,
+  OrderQuoteRequest,
+  OrderQuoteResponse,
+  PartialApiContext,
+  SigningScheme,
+  SupportedChainId as ChainId,
+  Trade,
+  PriceQuality,
+} from '@cowprotocol/cow-sdk'
 
-import { toErc20Address, toNativeBuyAddress } from 'legacy/utils/tokens'
-import { LegacyFeeQuoteParams as FeeQuoteParams } from './legacy/types'
+import { orderBookApi } from 'cowSdk'
 
 import { ZERO_ADDRESS } from 'legacy/constants/misc'
-import { orderBookApi } from 'cowSdk'
-import { OrderQuoteRequest, SigningScheme, OrderQuoteResponse, EnrichedOrder } from '@cowprotocol/cow-sdk'
+import { isBarn, isDev, isLocal, isPr } from 'legacy/utils/environments'
+import { toErc20Address, toNativeBuyAddress } from 'legacy/utils/tokens'
+
+import { getAppData } from 'modules/appData'
+
+import { ApiErrorObject } from 'api/gnosisProtocol/errors/OperatorError'
 import GpQuoteError, { mapOperatorErrorToQuoteError } from 'api/gnosisProtocol/errors/QuoteError'
-import { NativePriceResponse, Trade } from '@cowprotocol/cow-sdk'
-import { ApiErrorCodes } from 'api/gnosisProtocol/errors/OperatorError'
-import { getAppDataHash } from 'modules/appData'
+
+import { LegacyFeeQuoteParams as FeeQuoteParams } from './legacy/types'
 
 function getProfileUrl(): Partial<Record<ChainId, string>> {
   if (isLocal || isDev || isPr || isBarn) {
@@ -31,7 +45,6 @@ const PROFILE_API_BASE_URL = getProfileUrl()
 
 const DEFAULT_HEADERS = {
   'Content-Type': 'application/json',
-  'X-AppId': getAppDataHash(),
 }
 const API_NAME = 'CoW Protocol'
 /**
@@ -96,10 +109,10 @@ function _mapNewToLegacyParams(params: FeeQuoteParams): OrderQuoteRequest {
     buyToken: toNativeBuyAddress(buyToken, chainId),
     from: fallbackAddress,
     receiver: receiver || fallbackAddress,
-    appData: getAppDataHash(),
+    appData: getAppData().appDataKeccak256,
     validTo,
     partiallyFillable: false,
-    priceQuality: priceQuality ? (priceQuality as PriceQuality) : undefined,
+    priceQuality,
   }
 
   if (isEthFlow) {
@@ -127,7 +140,7 @@ export async function getQuote(params: FeeQuoteParams): Promise<OrderQuoteRespon
   const quoteParams = _mapNewToLegacyParams(params)
 
   return orderBookApi.getQuote(quoteParams, { chainId }).catch((error) => {
-    if (error instanceof OrderBookApiError<{ errorType: ApiErrorCodes }>) {
+    if (isOrderbookTypedError(error)) {
       const errorObject = mapOperatorErrorToQuoteError(error.body)
 
       return Promise.reject(errorObject ? new GpQuoteError(errorObject) : error)
@@ -137,12 +150,37 @@ export async function getQuote(params: FeeQuoteParams): Promise<OrderQuoteRespon
   })
 }
 
-export async function getOrder(chainId: ChainId, orderId: string): Promise<EnrichedOrder | null> {
-  return orderBookApi.getOrder(orderId, { chainId })
+export type OrderbookTypedError = OrderBookApiError<ApiErrorObject>
+
+function isOrderbookTypedError(e: any): e is OrderbookTypedError {
+  const error = e as OrderbookTypedError
+  return error.body.errorType !== undefined && error.body.description !== undefined
 }
 
-export async function getOrders(chainId: ChainId, owner: string, limit = 1000, offset = 0): Promise<EnrichedOrder[]> {
-  return orderBookApi.getOrders({ owner, limit, offset }, { chainId })
+export async function getOrder(chainId: ChainId, orderId: string, env?: CowEnv): Promise<EnrichedOrder | null> {
+  const contextOverride = {
+    chainId,
+    // To avoid passing `undefined` and unintentionally setting the `env` to `barn`
+    // we check if the `env` is `undefined` and if it is we don't include it in the contextOverride
+    ...(env
+      ? {
+          env,
+        }
+      : undefined),
+  }
+
+  return orderBookApi.getOrder(orderId, contextOverride)
+}
+
+export async function getOrders(
+  params: {
+    owner: Address
+    offset?: number
+    limit?: number
+  },
+  context: PartialApiContext
+): Promise<EnrichedOrder[]> {
+  return orderBookApi.getOrders(params, context)
 }
 
 export async function getTrades(chainId: ChainId, owner: string): Promise<Trade[]> {
@@ -178,4 +216,51 @@ export async function getProfileData(chainId: ChainId, address: string): Promise
   } else {
     return response.json()
   }
+}
+
+const NETWORK_TO_API_PREFIX = {
+  [ChainId.MAINNET]: 'mainnet',
+  [ChainId.GOERLI]: 'goerli',
+  [ChainId.GNOSIS_CHAIN]: 'xdai',
+}
+
+export type TotalSurplusData = {
+  totalSurplus: string
+}
+
+// TODO: Move to the SDK
+export async function getSurplusData(chainId: ChainId, address: string): Promise<TotalSurplusData> {
+  console.log(`[api:${API_NAME}] Get surplus data for`, chainId, address)
+
+  const baseUrl = `${getBaseUrl()}${NETWORK_TO_API_PREFIX[chainId]}/api`
+  const url = `/v1/users/${address}/total_surplus`
+
+  const response = await fetch(baseUrl + url, {
+    headers: DEFAULT_HEADERS,
+  })
+
+  return response.json()
+}
+
+// TODO: this is temporary until the surplus data is moved to the SDK
+function getBaseUrl(): string {
+  if (isLocal || isDev || isPr || isBarn) {
+    return 'https://barn.api.cow.fi/'
+  }
+
+  // Production, staging, ens, ...
+  return 'https://api.cow.fi/'
+}
+
+export function getPriceQuality(props: { fast?: boolean; verifyQuote: boolean }): PriceQuality {
+  const { fast = false, verifyQuote } = props
+  if (fast) {
+    return PriceQuality.FAST
+  }
+
+  if (verifyQuote) {
+    return PriceQuality.VERIFIED
+  }
+
+  return PriceQuality.OPTIMAL
 }

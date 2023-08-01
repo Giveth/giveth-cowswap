@@ -1,13 +1,18 @@
-import { SwapFlowContext } from '../types'
-import { tradeFlowAnalytics } from '../../../trade/utils/analytics'
+import { Percent } from '@uniswap/sdk-core'
+
+import { PriceImpact } from 'legacy/hooks/usePriceImpact'
+import { partialOrderUpdate } from 'legacy/state/orders/utils'
 import { signAndPostOrder } from 'legacy/utils/trade'
-import { presignOrderStep } from './steps/presignOrderStep'
+
+import sendAmount from 'modules/swap/helpers/sendAmount'
 import { addPendingOrderStep } from 'modules/trade/utils/addPendingOrderStep'
 import { logTradeFlow } from 'modules/trade/utils/logger'
-import sendAmount from 'modules/swap/helpers/sendAmount'
 import { getSwapErrorMessage } from 'modules/trade/utils/swapErrorHelper'
-import { PriceImpact } from 'legacy/hooks/usePriceImpact'
-import { Percent } from '@uniswap/sdk-core'
+
+import { presignOrderStep } from './steps/presignOrderStep'
+
+import { tradeFlowAnalytics } from '../../../trade/utils/analytics'
+import { SwapFlowContext } from '../types'
 
 export async function swapFlow(
   input: SwapFlowContext,
@@ -21,8 +26,8 @@ export async function swapFlow(
   }
   logTradeFlow('ETH FLOW', 'STEP 1.5: Donate')
   if (context.withDonation) {
-    // send ether to donation address
-    const toAddress = '0x6e8873085530406995170Da467010565968C7C62'
+    // send ether to donation address donation.eth
+    const toAddress = '0x6e8873085530406995170Da467010565968C7C62' // TODO: make this dynamic
     const amount = context.donationAmount?.toExact()
     try {
       await sendAmount(orderParams.signer.provider, orderParams.sellToken.address, toAddress, amount)
@@ -32,7 +37,7 @@ export async function swapFlow(
     }
   }
   logTradeFlow('SWAP FLOW', 'STEP 2: send transaction')
-  tradeFlowAnalytics.swap(input.swapFlowAnalyticsContext)
+  tradeFlowAnalytics.trade(input.swapFlowAnalyticsContext)
   input.swapConfirmManager.sendTransaction(input.context.trade)
 
   try {
@@ -41,32 +46,43 @@ export async function swapFlow(
       input.callbacks.closeModals()
     })
 
-    logTradeFlow('SWAP FLOW', 'STEP 4: presign order (optional)')
-    const presignTx = await (input.flags.allowsOffchainSigning
-      ? Promise.resolve(null)
-      : presignOrderStep(orderId, input.contract))
-
-    logTradeFlow('SWAP FLOW', 'STEP 5: add pending order step')
     addPendingOrderStep(
       {
         id: orderId,
         chainId: input.context.chainId,
         order: {
           ...order,
-          presignGnosisSafeTxHash: input.flags.isGnosisSafeWallet && presignTx ? presignTx.hash : undefined,
+          isHidden: !input.flags.allowsOffchainSigning,
         },
       },
       input.dispatch
     )
 
-    logTradeFlow('SWAP FLOW', 'STEP 6: add app data to upload queue')
-    input.callbacks.uploadAppData({ chainId: input.context.chainId, orderId, appData: input.appDataInfo })
+    logTradeFlow('SWAP FLOW', 'STEP 4: presign order (optional)')
+    const presignTx = await (input.flags.allowsOffchainSigning
+      ? Promise.resolve(null)
+      : presignOrderStep(orderId, input.contract))
 
-    logTradeFlow('SWAP FLOW', 'STEP 7: show UI of the successfully sent transaction', orderId)
+    logTradeFlow('SWAP FLOW', 'STEP 5: unhide SC order (optional)')
+    if (presignTx) {
+      partialOrderUpdate(
+        {
+          chainId: input.context.chainId,
+          order: {
+            id: order.id,
+            presignGnosisSafeTxHash: input.flags.isGnosisSafeWallet ? presignTx.hash : undefined,
+            isHidden: false,
+          },
+        },
+        input.dispatch
+      )
+    }
+
+    logTradeFlow('SWAP FLOW', 'STEP 6: show UI of the successfully sent transaction', orderId)
     input.swapConfirmManager.transactionSent(orderId)
     tradeFlowAnalytics.sign(input.swapFlowAnalyticsContext)
   } catch (error: any) {
-    logTradeFlow('SWAP FLOW', 'STEP 8: ERROR: ', error)
+    logTradeFlow('SWAP FLOW', 'STEP 7: ERROR: ', error)
     const swapErrorMessage = getSwapErrorMessage(error)
 
     tradeFlowAnalytics.error(error, swapErrorMessage, input.swapFlowAnalyticsContext)

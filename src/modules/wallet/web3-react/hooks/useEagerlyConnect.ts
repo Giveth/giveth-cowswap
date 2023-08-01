@@ -1,10 +1,17 @@
-import { Connector } from '@web3-react/types'
-import { networkConnection } from 'modules/wallet/web3-react/connection/network'
-import { gnosisSafeConnection } from 'modules/wallet/web3-react/connection/safe'
-import { getWeb3ReactConnection } from 'modules/wallet/web3-react/connection'
 import { useEffect } from 'react'
+
+import { Connector } from '@web3-react/types'
+
 import { useAppSelector } from 'legacy/state/hooks'
+
 import { BACKFILLABLE_WALLETS } from 'modules/wallet/api/types'
+
+import { isInjectedWidget } from 'common/utils/isInjectedWidget'
+
+import { getWeb3ReactConnection } from '../connection'
+import { injectedWidgetConnection } from '../connection/injectedWidget'
+import { networkConnection } from '../connection/network'
+import { gnosisSafeConnection } from '../connection/safe'
 
 async function connect(connector: Connector) {
   try {
@@ -23,6 +30,10 @@ export function useEagerlyConnect() {
   const selectedWallet = useAppSelector((state) => state.user.selectedWallet)
 
   useEffect(() => {
+    if (isInjectedWidget()) {
+      connect(injectedWidgetConnection.connector)
+    }
+
     connect(gnosisSafeConnection.connector)
     connect(networkConnection.connector)
 

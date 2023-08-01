@@ -1,20 +1,29 @@
+import { transparentize } from 'polished'
 import styled from 'styled-components/macro'
+
 import { loadingOpacityMixin } from 'legacy/components/Loader/styled'
 import Input from 'legacy/components/NumericalInput'
-import { transparentize } from 'polished'
+
 import { TokenAmount } from 'common/pure/TokenAmount'
 
-export const Wrapper = styled.div<{ withReceiveAmountInfo: boolean; disabled: boolean }>`
+export const OuterWrapper = styled.div`
+  max-width: 100%;
+  display: flex;
+  flex-flow: column wrap;
+`
+
+export const Wrapper = styled.div<{ withReceiveAmountInfo: boolean; inputDisabled: boolean; disabled: boolean }>`
   display: flex;
   flex-flow: row wrap;
   align-content: space-between;
   gap: 10px;
   padding: 16px;
-  background: ${({ theme }) => theme.input.bg1};
-  border: none;
+  background: ${({ theme, inputDisabled }) => (inputDisabled ? 'transparent' : theme.input.bg1)};
+  border: ${({ theme, inputDisabled }) => (inputDisabled ? `1px solid ${theme.grey1}` : 'none')};
   border-radius: ${({ withReceiveAmountInfo }) => (withReceiveAmountInfo ? '16px 16px 0 0' : '16px')};
   min-height: 106px;
   pointer-events: ${({ disabled }) => (disabled ? 'none' : '')};
+  max-width: 100%;
 
   ${({ theme }) => theme.mediaWidth.upToSmall`
     padding: 16px 12px;
@@ -65,13 +74,21 @@ export const NumericalInput = styled(Input)<{ $loading: boolean }>`
   font-weight: 500;
   color: ${({ theme }) => theme.text1};
 
-  ${({ theme }) => theme.mediaWidth.upToSmall`
-    font-size: 26px;
-  `}
+  &[disabled] {
+    -webkit-text-fill-color: ${({ theme }) => theme.text1}; // safari fix
+  }
+
+  &[disabled]::selection {
+    background: transparent;
+  }
 
   &::placeholder {
     color: ${({ theme }) => transparentize(0.3, theme.text1)};
   }
+
+  ${({ theme }) => theme.mediaWidth.upToSmall`
+    font-size: 26px;
+  `}
 
   ${loadingOpacityMixin}
 `

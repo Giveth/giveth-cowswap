@@ -1,16 +1,20 @@
 import { useSetAtom } from 'jotai'
+import { useAtomValue } from 'jotai'
+import React, { useCallback, useState } from 'react'
+
 import { Menu, MenuItem } from '@reach/menu-button'
+
+import { ExpertModeIndicator, MenuContent, SettingsButton, SettingsIcon } from 'modules/trade/pure/Settings'
+
+import { useFeatureFlags } from 'common/hooks/featureFlags/useFeatureFlags'
+import { ExpertModeModal } from 'common/pure/ExpertModeModal'
+
+import { Settings } from '../../pure/Settings'
 import {
   limitOrdersSettingsAtom,
   LimitOrdersSettingsState,
   updateLimitOrdersSettingsAtom,
 } from '../../state/limitOrdersSettingsAtom'
-import { Settings } from '../../pure/Settings'
-import { ExpertModeModal } from 'common/pure/ExpertModeModal'
-import React, { useCallback, useState } from 'react'
-import * as styledEl from './styled'
-import { useAtomValue } from 'jotai/utils'
-import { useFeatureFlags } from 'common/hooks/useFeatureFlags'
 
 export function SettingsWidget() {
   const settingsState = useAtomValue(limitOrdersSettingsAtom)
@@ -45,16 +49,16 @@ export function SettingsWidget() {
   return (
     <>
       <Menu>
-        <styledEl.SettingsButton>
-          <styledEl.SettingsIcon />
+        <SettingsButton>
+          <SettingsIcon />
           {settingsState.expertMode && (
-            <styledEl.ExpertModeIndicator>
+            <ExpertModeIndicator>
               <span>🐮</span>
               <span>🥋</span>
-            </styledEl.ExpertModeIndicator>
+            </ExpertModeIndicator>
           )}
-        </styledEl.SettingsButton>
-        <styledEl.MenuContent>
+        </SettingsButton>
+        <MenuContent>
           <MenuItem disabled={true} onSelect={() => void 0}>
             <Settings
               state={settingsState}
@@ -62,7 +66,7 @@ export function SettingsWidget() {
               featurePartialFillsEnabled={partialFillsEnabled}
             />
           </MenuItem>
-        </styledEl.MenuContent>
+        </MenuContent>
       </Menu>
       <ExpertModeModal
         isOpen={showExpertConfirm}

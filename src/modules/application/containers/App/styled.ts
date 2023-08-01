@@ -1,5 +1,4 @@
 import * as CSS from 'csstype'
-
 import styled from 'styled-components/macro'
 
 export const AppWrapper = styled.div<Partial<CSS.Properties>>`
@@ -23,6 +22,10 @@ export const FooterWrapper = styled(HeaderWrapper)`
 
 export const Marginer = styled.div`
   margin-top: 5rem;
+`
+
+export const MarginerBottom = styled.div`
+  margin-bottom: 60px;
 `
 
 export const BodyWrapper = styled.div`

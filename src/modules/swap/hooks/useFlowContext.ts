@@ -1,33 +1,37 @@
+import { Weth } from '@cowprotocol/abis'
+import { OrderClass, OrderKind } from '@cowprotocol/cow-sdk'
+import { Web3Provider } from '@ethersproject/providers'
+import { SafeInfoResponse } from '@safe-global/api-kit'
+import { Currency, CurrencyAmount, Token } from '@uniswap/sdk-core'
 import { useWeb3React } from '@web3-react/core'
-import { useSwapState } from 'legacy/state/swap/hooks'
-import { useDerivedSwapInfo } from 'legacy/state/swap/hooks'
+
+import { useDispatch } from 'react-redux'
+
+import { NATIVE_CURRENCY_BUY_TOKEN } from 'legacy/constants'
 import { GpEther as ETHER } from 'legacy/constants/tokens'
-import { useGnosisSafeInfo, useWalletDetails, useWalletInfo } from 'modules/wallet'
+import { useWETHContract } from 'legacy/hooks/useContract'
+import useENSAddress from 'legacy/hooks/useENSAddress'
+import { AppDispatch } from 'legacy/state'
 import { useCloseModals } from 'legacy/state/application/hooks'
 import { AddOrderCallback, useAddPendingOrder } from 'legacy/state/orders/hooks'
-import { useDispatch } from 'react-redux'
-import { AppDispatch } from 'legacy/state'
-import { SwapFlowAnalyticsContext } from 'modules/trade/utils/analytics'
-import useENSAddress from 'legacy/hooks/useENSAddress'
-import { SwapConfirmManager, useSwapConfirmManager } from 'modules/swap/hooks/useSwapConfirmManager'
-import { useWETHContract } from 'legacy/hooks/useContract'
-import { computeSlippageAdjustedAmounts } from 'legacy/utils/prices'
-import { Currency, CurrencyAmount, Token } from '@uniswap/sdk-core'
-import { OrderKind } from '@cowprotocol/cow-sdk'
-import { NATIVE_CURRENCY_BUY_TOKEN } from 'legacy/constants'
-import { useUserTransactionTTL } from 'legacy/state/user/hooks'
-import { useUploadAppData, useAppData } from 'modules/appData'
-import { useIsEthFlow } from 'modules/swap/hooks/useIsEthFlow'
-import { Weth } from 'legacy/abis/types'
+import { useDerivedSwapInfo, useSwapState } from 'legacy/state/swap/hooks'
 import TradeGp from 'legacy/state/swap/TradeGp'
-import type { UploadAppDataParams, AppDataInfo } from 'modules/appData'
-import { SafeInfoResponse } from '@safe-global/api-kit'
-import { Web3Provider } from '@ethersproject/providers'
-import { BaseFlowContext } from 'modules/swap/services/types'
-import { calculateValidTo } from 'utils/time'
+import { useUserTransactionTTL } from 'legacy/state/user/hooks'
+import { computeSlippageAdjustedAmounts } from 'legacy/utils/prices'
 import { PostOrderParams } from 'legacy/utils/trade'
-import { OrderClass } from '@cowprotocol/cow-sdk'
+
+import { useAppData } from 'modules/appData'
+import type { AppDataInfo } from 'modules/appData'
 import { useIsSafeApprovalBundle } from 'modules/limitOrders/hooks/useIsSafeApprovalBundle'
+import { useIsEoaEthFlow } from 'modules/swap/hooks/useIsEoaEthFlow'
+import { SwapConfirmManager, useSwapConfirmManager } from 'modules/swap/hooks/useSwapConfirmManager'
+import { BaseFlowContext } from 'modules/swap/services/types'
+import { SwapFlowAnalyticsContext } from 'modules/trade/utils/analytics'
+import { useGnosisSafeInfo, useWalletDetails, useWalletInfo } from 'modules/wallet'
+
+import { calculateValidTo } from 'utils/time'
+
+import { useIsSafeEthFlow } from './useIsSafeEthFlow'
 
 const _computeInputAmountForSignature = (params: {
   input: CurrencyAmount<Currency>
@@ -51,8 +55,9 @@ const _computeInputAmountForSignature = (params: {
 
 export enum FlowType {
   REGULAR = 'REGULAR',
-  ETH_FLOW = 'ETH_FLOW',
-  SAFE_BUNDLE = 'SAFE_BUNDLE',
+  EOA_ETH_FLOW = 'EOA_ETH_FLOW',
+  SAFE_BUNDLE_APPROVAL = 'SAFE_BUNDLE_APPROVAL',
+  SAFE_BUNDLE_ETH = 'SAFE_BUNDLE_ETH',
 }
 
 interface BaseFlowContextSetup {
@@ -75,7 +80,6 @@ interface BaseFlowContextSetup {
   swapConfirmManager: SwapConfirmManager
   flowType: FlowType
   closeModals: () => void
-  uploadAppData: (update: UploadAppDataParams) => void
   addOrderCallback: AddOrderCallback
   dispatch: AppDispatch
 }
@@ -90,7 +94,6 @@ export function useBaseFlowContextSetup(): BaseFlowContextSetup {
 
   const appData = useAppData()
   const closeModals = useCloseModals()
-  const uploadAppData = useUploadAppData()
   const addOrderCallback = useAddPendingOrder()
   const dispatch = useDispatch<AppDispatch>()
 
@@ -99,7 +102,8 @@ export function useBaseFlowContextSetup(): BaseFlowContextSetup {
   const [deadline] = useUserTransactionTTL()
   const wethContract = useWETHContract()
   const swapConfirmManager = useSwapConfirmManager()
-  const isEthFlow = useIsEthFlow()
+  const isEoaEthFlow = useIsEoaEthFlow()
+  const isSafeEthFlow = useIsSafeEthFlow()
 
   const { INPUT: inputAmountWithSlippage, OUTPUT: outputAmountWithSlippage } = computeSlippageAdjustedAmounts(
     trade,
@@ -107,7 +111,7 @@ export function useBaseFlowContextSetup(): BaseFlowContextSetup {
   )
 
   const isSafeBundle = useIsSafeApprovalBundle(inputAmountWithSlippage)
-  const flowType = _getFlowType(isSafeBundle, isEthFlow)
+  const flowType = _getFlowType(isSafeBundle, isEoaEthFlow, isSafeEthFlow)
 
   return {
     chainId,
@@ -129,19 +133,21 @@ export function useBaseFlowContextSetup(): BaseFlowContextSetup {
     swapConfirmManager,
     flowType,
     closeModals,
-    uploadAppData,
     addOrderCallback,
     dispatch,
   }
 }
 
-function _getFlowType(isSafeBundle: boolean, isEthFlow: boolean): FlowType {
-  if (isSafeBundle) {
+function _getFlowType(isSafeBundle: boolean, isEoaEthFlow: boolean, isSafeEthFlow: boolean): FlowType {
+  if (isSafeEthFlow) {
+    // Takes precedence over bundle approval
+    return FlowType.SAFE_BUNDLE_ETH
+  } else if (isSafeBundle) {
     // Takes precedence over eth flow
-    return FlowType.SAFE_BUNDLE
-  } else if (isEthFlow) {
+    return FlowType.SAFE_BUNDLE_APPROVAL
+  } else if (isEoaEthFlow) {
     // Takes precedence over regular flow
-    return FlowType.ETH_FLOW
+    return FlowType.EOA_ETH_FLOW
   }
   return FlowType.REGULAR
 }
@@ -172,9 +178,9 @@ export function getFlowContext({ baseProps, sellToken, kind }: BaseGetFlowContex
     allowsOffchainSigning,
     swapConfirmManager,
     closeModals,
-    uploadAppData,
     addOrderCallback,
     dispatch,
+    flowType,
   } = baseProps
 
   if (
@@ -233,7 +239,7 @@ export function getFlowContext({ baseProps, sellToken, kind }: BaseGetFlowContex
     signer: provider.getSigner(),
     allowsOffchainSigning,
     partiallyFillable: false, // SWAP orders are always fill or kill - for now
-    appDataHash: appData.hash,
+    appData,
     quoteId: trade.quoteId,
   }
 
@@ -245,6 +251,7 @@ export function getFlowContext({ baseProps, sellToken, kind }: BaseGetFlowContex
       donationAmount,
       inputAmountWithSlippage,
       outputAmountWithSlippage,
+      flowType,
     },
     flags: {
       allowsOffchainSigning,
@@ -253,7 +260,6 @@ export function getFlowContext({ baseProps, sellToken, kind }: BaseGetFlowContex
     callbacks: {
       closeModals,
       addOrderCallback,
-      uploadAppData,
     },
     dispatch,
     swapFlowAnalyticsContext,

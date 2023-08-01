@@ -1,5 +1,11 @@
+import { useSetAtom } from 'jotai'
 import { useCallback, useEffect, useRef } from 'react'
 
+import { EthflowData, OrderClass, SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
+
+import { GetSafeInfo, useGetSafeInfo } from 'legacy/hooks/useGetSafeInfo'
+import { FulfillOrdersBatchParams, Order, OrderFulfillmentData, OrderStatus } from 'legacy/state/orders/actions'
+import { LIMIT_OPERATOR_API_POLL_INTERVAL, MARKET_OPERATOR_API_POLL_INTERVAL } from 'legacy/state/orders/consts'
 import {
   AddOrUpdateOrdersCallback,
   CancelOrdersBatchCallback,
@@ -9,27 +15,24 @@ import {
   UpdatePresignGnosisSafeTxCallback,
   useAddOrUpdateOrders,
   useCancelOrdersBatch,
+  useCombinedPendingOrders,
   useExpireOrdersBatch,
   useFulfillOrdersBatch,
-  useCombinedPendingOrders,
   usePresignOrders,
   useUpdatePresignGnosisSafeTx,
 } from 'legacy/state/orders/hooks'
-import { OrderTransitionStatus } from 'legacy/state/orders/utils'
-import { FulfillOrdersBatchParams, Order, OrderFulfillmentData, OrderStatus } from 'legacy/state/orders/actions'
-import { OrderClass, EthflowData } from '@cowprotocol/cow-sdk'
-import { LIMIT_OPERATOR_API_POLL_INTERVAL, MARKET_OPERATOR_API_POLL_INTERVAL } from 'legacy/state/orders/consts'
-import { SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
-import { getOrder, OrderID } from 'api/gnosisProtocol'
 import { fetchOrderPopupData, OrderLogPopupMixData } from 'legacy/state/orders/updaters/utils'
-import { GetSafeInfo, useGetSafeInfo } from 'legacy/hooks/useGetSafeInfo'
+import { OrderTransitionStatus } from 'legacy/state/orders/utils'
 import { isOrderInPendingTooLong, openNpsAppziSometimes } from 'legacy/utils/appzi'
-import { timeSinceInSeconds } from 'utils/time'
 import { getExplorerOrderLink } from 'legacy/utils/explorer'
-import { supportedChainId } from 'legacy/utils/supportedChainId'
+
+import { useAddOrderToSurplusQueue } from 'modules/swap/state/surplusModal'
 import { useWalletInfo } from 'modules/wallet'
-import { useUpdateAtom } from 'jotai/utils'
+
+import { getOrder, OrderID } from 'api/gnosisProtocol'
 import { removeOrdersToCancelAtom } from 'common/hooks/useMultipleOrdersCancellation/state'
+import { useTriggerTotalSurplusUpdateCallback } from 'common/state/totalSurplusState'
+import { timeSinceInSeconds } from 'utils/time'
 
 /**
  * Return the ids of the orders that we are not yet aware that are signed.
@@ -139,6 +142,8 @@ interface UpdateOrdersParams {
   expireOrdersBatch: ExpireOrdersBatchCallback
   cancelOrdersBatch: CancelOrdersBatchCallback
   presignOrders: PresignOrdersCallback
+  addOrderToSurplusQueue: (orderId: string) => void
+  triggerTotalSurplusUpdate: (() => void) | null
   updatePresignGnosisSafeTx: UpdatePresignGnosisSafeTxCallback
   getSafeInfo: GetSafeInfo
 }
@@ -153,6 +158,8 @@ async function _updateOrders({
   expireOrdersBatch,
   cancelOrdersBatch,
   presignOrders,
+  addOrderToSurplusQueue,
+  triggerTotalSurplusUpdate,
   updatePresignGnosisSafeTx,
   getSafeInfo,
 }: UpdateOrdersParams): Promise<void> {
@@ -214,10 +221,20 @@ async function _updateOrders({
   }
 
   if (fulfilled.length > 0) {
+    const fulfilledOrders = fulfilled as OrderFulfillmentData[]
+    // update redux state
     fulfillOrdersBatch({
-      ordersData: fulfilled as OrderFulfillmentData[],
+      ordersData: fulfilledOrders,
       chainId,
     })
+    // add to surplus queue
+    fulfilledOrders.forEach(({ id, apiAdditionalInfo }) => {
+      if (!apiAdditionalInfo || apiAdditionalInfo.class === OrderClass.MARKET) {
+        addOrderToSurplusQueue(id)
+      }
+    })
+    // trigger total surplus update
+    triggerTotalSurplusUpdate?.()
   }
 
   // Update the presign Gnosis Safe Tx info (if applies)
@@ -248,9 +265,8 @@ function _triggerNps(pending: Order[], chainId: ChainId) {
 }
 
 export function PendingOrdersUpdater(): null {
-  const { chainId: _chainId, account } = useWalletInfo()
-  const chainId = supportedChainId(_chainId)
-  const removeOrdersToCancel = useUpdateAtom(removeOrdersToCancelAtom)
+  const { chainId, account } = useWalletInfo()
+  const removeOrdersToCancel = useSetAtom(removeOrdersToCancelAtom)
 
   const pending = useCombinedPendingOrders({ chainId })
   const isUpdating = useRef(false) // TODO: Implement using SWR or retry/cancellable promises
@@ -264,6 +280,8 @@ export function PendingOrdersUpdater(): null {
   const cancelOrdersBatch = useCancelOrdersBatch()
   const addOrUpdateOrders = useAddOrUpdateOrders()
   const presignOrders = usePresignOrders()
+  const addOrderToSurplusQueue = useAddOrderToSurplusQueue()
+  const triggerTotalSurplusUpdate = useTriggerTotalSurplusUpdateCallback()
   const updatePresignGnosisSafeTx = useUpdatePresignGnosisSafeTx()
   const getSafeInfo = useGetSafeInfo()
 
@@ -295,6 +313,8 @@ export function PendingOrdersUpdater(): null {
           expireOrdersBatch,
           cancelOrdersBatch,
           presignOrders,
+          addOrderToSurplusQueue,
+          triggerTotalSurplusUpdate,
           updatePresignGnosisSafeTx,
           getSafeInfo,
         }).finally(() => {
@@ -309,6 +329,8 @@ export function PendingOrdersUpdater(): null {
       expireOrdersBatch,
       cancelOrdersBatch,
       presignOrders,
+      addOrderToSurplusQueue,
+      triggerTotalSurplusUpdate,
       updatePresignGnosisSafeTx,
       getSafeInfo,
     ]

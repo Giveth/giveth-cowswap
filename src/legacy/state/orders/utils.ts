@@ -1,12 +1,20 @@
+import { EnrichedOrder, OrderClass, OrderKind, OrderStatus } from '@cowprotocol/cow-sdk'
 import { Currency, CurrencyAmount, Price } from '@uniswap/sdk-core'
-import { ONE_HUNDRED_PERCENT } from 'legacy/constants/misc'
-import { PENDING_ORDERS_BUFFER, ZERO_FRACTION } from 'legacy/constants'
-import { Order } from 'legacy/state/orders/actions'
-import { OUT_OF_MARKET_PRICE_DELTA_PERCENTAGE } from 'legacy/state/orders/consts'
-import { EnrichedOrder, OrderClass, OrderKind } from '@cowprotocol/cow-sdk'
+
 import JSBI from 'jsbi'
-import { buildPriceFromCurrencyAmounts } from 'modules/limitOrders/utils/buildPriceFromCurrencyAmounts'
-import { getOrderSurplus } from 'modules/limitOrders/utils/getOrderSurplus'
+
+import { PENDING_ORDERS_BUFFER, ZERO_FRACTION } from 'legacy/constants'
+import { ONE_HUNDRED_PERCENT } from 'legacy/constants/misc'
+import { AppDispatch } from 'legacy/state'
+import { Order, updateOrder, UpdateOrderParams as UpdateOrderParamsAction } from 'legacy/state/orders/actions'
+import { OUT_OF_MARKET_PRICE_DELTA_PERCENTAGE } from 'legacy/state/orders/consts'
+import { UpdateOrderParams } from 'legacy/state/orders/hooks'
+import { serializeToken } from 'legacy/state/user/hooks'
+
+import { buildPriceFromCurrencyAmounts } from 'modules/utils/orderUtils/buildPriceFromCurrencyAmounts'
+
+import { getIsComposableCowParentOrder } from 'utils/orderUtils/getIsComposableCowParentOrder'
+import { getOrderSurplus } from 'utils/orderUtils/getOrderSurplus'
 
 export type OrderTransitionStatus =
   | 'unknown'
@@ -21,7 +29,7 @@ export type OrderTransitionStatus =
  * An order is considered fulfilled if all sellAmount has been sold, for sell orders
  * or all buyAmount has been bought, for buy orders
  */
-function isOrderFulfilled(
+export function isOrderFulfilled(
   order: Pick<EnrichedOrder, 'buyAmount' | 'sellAmount' | 'executedBuyAmount' | 'executedSellAmountBeforeFees' | 'kind'>
 ): boolean {
   const { buyAmount, sellAmount, executedBuyAmount, executedSellAmountBeforeFees, kind } = order
@@ -41,9 +49,11 @@ function isOrderFulfilled(
  *
  * We assume the order is not fulfilled.
  */
-function isOrderCancelled(order: Pick<EnrichedOrder, 'creationDate' | 'invalidated'>): boolean {
+export function isOrderCancelled(order: Pick<EnrichedOrder, 'creationDate' | 'invalidated' | 'status'>): boolean {
   const creationTime = new Date(order.creationDate).getTime()
-  return order.invalidated && Date.now() - creationTime > PENDING_ORDERS_BUFFER
+  return (
+    (order.invalidated && Date.now() - creationTime > PENDING_ORDERS_BUFFER) || order.status === OrderStatus.CANCELLED
+  )
 }
 
 /**
@@ -221,7 +231,7 @@ export function getEstimatedExecutionPrice(
   order: Order,
   fillPrice: Price<Currency, Currency>,
   fee: string
-): Price<Currency, Currency> {
+): Price<Currency, Currency> | null {
   // Build CurrencyAmount and Price instances
   const feeAmount = CurrencyAmount.fromRawAmount(order.inputToken, fee)
   // Always use original amounts for building the limit price, as this will never change
@@ -231,6 +241,11 @@ export function getEstimatedExecutionPrice(
 
   if (order.class === OrderClass.MARKET) {
     return limitPrice
+  }
+
+  // Parent TWAP order, ignore
+  if (getIsComposableCowParentOrder(order)) {
+    return null
   }
 
   // Check what's left to sell, discounting the surplus, if any
@@ -359,4 +374,16 @@ export function getRemainderAmount(kind: OrderKind, order: Order): string {
   const executedAmount = JSBI.BigInt((kind === OrderKind.SELL ? executedSellAmountBeforeFees : executedBuyAmount) || 0)
 
   return JSBI.subtract(JSBI.BigInt(fullAmount), executedAmount).toString()
+}
+
+export function partialOrderUpdate({ chainId, order }: UpdateOrderParams, dispatch: AppDispatch): void {
+  const params: UpdateOrderParamsAction = {
+    chainId,
+    order: {
+      ...order,
+      ...(order.inputToken && { inputToken: serializeToken(order.inputToken) }),
+      ...(order.outputToken && { outputToken: serializeToken(order.outputToken) }),
+    },
+  }
+  dispatch(updateOrder(params))
 }

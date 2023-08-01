@@ -1,7 +1,32 @@
-// eslint-disable-next-line no-restricted-imports
-import { Trans, t } from '@lingui/macro'
 import { useEffect, useMemo, useState, useCallback, useRef, ChangeEventHandler } from 'react'
+
 import { Token } from '@uniswap/sdk-core'
+import { useWeb3React } from '@web3-react/core'
+
+import { Trans, t } from '@lingui/macro'
+import { Check } from 'react-feather'
+
+import { PageName } from 'legacy/components/AmplitudeAnalytics/constants'
+import { Trace } from 'legacy/components/AmplitudeAnalytics/Trace'
+import { ContentWrapper as SearchInputFormatter } from 'legacy/components/SearchModal/CurrencySearch'
+import { TokenSearchInput } from 'legacy/components/Tokens/styled'
+import TokensTable from 'legacy/components/Tokens/TokensTable'
+import { useAllTokens } from 'legacy/hooks/Tokens'
+import useDebounce from 'legacy/hooks/useDebounce'
+import { useOnClickOutside } from 'legacy/hooks/useOnClickOutside'
+import usePrevious from 'legacy/hooks/usePrevious'
+import useTheme from 'legacy/hooks/useTheme'
+import { useAllTokenBalances } from 'legacy/state/connection/hooks'
+import { useFavouriteTokens, useRemoveAllFavouriteTokens, useInitFavouriteTokens } from 'legacy/state/user/hooks'
+import { CloseIcon } from 'legacy/theme'
+import { isAddress } from 'legacy/utils'
+import { isTruthy } from 'legacy/utils/misc'
+
+import { PageTitle } from 'modules/application/containers/PageTitle'
+import { useWalletInfo } from 'modules/wallet'
+
+import { useIsProviderNetworkUnsupported } from 'common/hooks/useIsProviderNetworkUnsupported'
+
 import {
   Menu,
   MenuButton,
@@ -14,27 +39,8 @@ import {
   ClearSearchInput,
   Overview,
 } from './styled'
-import { TokenSearchInput } from 'legacy/components/Tokens/styled'
-import { useAllTokens } from 'legacy/hooks/Tokens'
-import { isTruthy } from 'legacy/utils/misc'
-import TokensTable from 'legacy/components/Tokens/TokensTable'
-import { useFavouriteTokens, useRemoveAllFavouriteTokens, useInitFavouriteTokens } from 'legacy/state/user/hooks'
-import { useAllTokenBalances } from 'legacy/state/connection/hooks'
-import { Check } from 'react-feather'
-import { useOnClickOutside } from 'legacy/hooks/useOnClickOutside'
-import useTheme from 'legacy/hooks/useTheme'
-import usePrevious from 'legacy/hooks/usePrevious'
-import { useWeb3React } from '@web3-react/core'
+
 import { CardsLoader, CardsSpinner } from '../styled'
-import { supportedChainId } from 'legacy/utils/supportedChainId'
-import { ContentWrapper as SearchInputFormatter } from 'legacy/components/SearchModal/CurrencySearch'
-import useDebounce from 'legacy/hooks/useDebounce'
-import { isAddress } from 'legacy/utils'
-import { CloseIcon } from 'legacy/theme'
-import { PageTitle } from 'modules/application/containers/PageTitle'
-import { PageName } from 'legacy/components/AmplitudeAnalytics/constants'
-import { Trace } from 'legacy/components/AmplitudeAnalytics/Trace'
-import { useWalletInfo } from 'modules/wallet'
 
 export enum PageViewKeys {
   ALL_TOKENS = 'ALL_TOKENS',
@@ -63,8 +69,6 @@ export default function TokensOverview() {
   const prevSelectedView = usePrevious(selectedView)
   const prevAccount = usePrevious(account)
 
-  const isChainSupported = supportedChainId(chainId)
-
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [])
@@ -80,6 +84,8 @@ export default function TokensOverview() {
   const prevQuery = usePrevious(debouncedQuery)
 
   const removeAllFavouriteTokens = useRemoveAllFavouriteTokens()
+  const isProviderNetworkUnsupported = useIsProviderNetworkUnsupported()
+
   const handleRestoreTokens = useCallback(() => {
     removeAllFavouriteTokens()
     setPage(1)
@@ -113,8 +119,6 @@ export default function TokensOverview() {
           <CardsSpinner size="42px" />
         </CardsLoader>
       )
-    } else if (!isChainSupported) {
-      return <Trans>Unsupported network</Trans>
     }
 
     return (
@@ -128,18 +132,7 @@ export default function TokensOverview() {
         tokensData={tokensData}
       />
     )
-  }, [
-    balances,
-    debouncedQuery,
-    favouriteTokens,
-    formattedTokens,
-    isChainSupported,
-    page,
-    prevQuery,
-    provider,
-    query,
-    selectedView,
-  ])
+  }, [balances, debouncedQuery, favouriteTokens, formattedTokens, page, prevQuery, provider, query, selectedView])
 
   const handleSearch: ChangeEventHandler<HTMLInputElement> = useCallback(
     (event) => {
@@ -164,7 +157,7 @@ export default function TokensOverview() {
 
   return (
     <Trace page={PageName.ACCOUNT_TOKENS_PAGE} shouldLogImpression>
-      {isChainSupported && (
+      {!isProviderNetworkUnsupported && (
         <AccountHeading>
           <LeftSection>
             <MenuWrapper ref={node as any}>
@@ -219,7 +212,7 @@ export default function TokensOverview() {
       <Overview>
         <PageTitle title="Tokens Overview" />
 
-        {renderTableContent()}
+        {isProviderNetworkUnsupported ? 'Unsupported network' : renderTableContent()}
       </Overview>
     </Trace>
   )

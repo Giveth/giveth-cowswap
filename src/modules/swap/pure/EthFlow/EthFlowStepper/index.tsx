@@ -1,19 +1,20 @@
-import styled from 'styled-components/macro'
-import { Step1 } from './steps/Step1'
-import { Progress1 } from './steps/Progress1'
-import { Step2 } from './steps/Step2'
-import { Progress2 } from './steps/Progress2'
-import { Step3 } from './steps/Step3'
-import { StatusIconState } from './StatusIcon'
+import React from 'react'
+
 import { transparentize } from 'polished'
+import styled from 'styled-components/macro'
+
+import { StatusIconState } from './StatusIcon'
+import { Progress1 } from './steps/Progress1'
+import { Progress2 } from './steps/Progress2'
+import { Step1 } from './steps/Step1'
+import { Step2 } from './steps/Step2'
+import { Step3 } from './steps/Step3'
 
 export enum SmartOrderStatus {
   CREATING = 'CREATING',
   CREATION_MINED = 'CREATED',
   INDEXED = 'INDEXED',
   FILLED = 'FILLED',
-  DONATING = 'DONATING',
-  DONATED = 'DONATED',
 }
 
 type TxState = {
@@ -63,6 +64,9 @@ export interface EthFlowStepperProps {
    */
   cancellation: TxState
 
+  /**
+   * Integration on donation flow
+   */
   donation?: any // TODO: type
 }
 

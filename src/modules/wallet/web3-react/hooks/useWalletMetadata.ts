@@ -1,9 +1,11 @@
-import { useWeb3React } from '@web3-react/core'
-import { getWeb3ReactConnection } from 'modules/wallet/web3-react/connection'
-import { ConnectionType } from 'modules/wallet'
 import { useMemo } from 'react'
-import { getIsAlphaWallet } from 'modules/wallet/api/utils/connection'
+
+import { useWeb3React } from '@web3-react/core'
+
+import { ConnectionType } from 'modules/wallet'
 import { default as AlphaImage } from 'modules/wallet/api/assets/alpha.svg'
+import { getIsAlphaWallet } from 'modules/wallet/api/utils/connection'
+import { getWeb3ReactConnection } from 'modules/wallet/web3-react/connection'
 
 const WC_DESKTOP_GNOSIS_SAFE_APP_NAME = 'WalletConnect Safe App'
 const WC_MOBILE_GNOSIS_SAFE_APP_NAME = 'Safe'
@@ -49,7 +51,9 @@ function getWcPeerMetadata(provider: any | undefined): WalletMetaData {
     return defaultOutput
   }
 
-  const meta = provider.connector.peerMeta
+  const v1MetaData = provider?.connector?.peerMeta
+  const v2MetaData = provider?.signer?.session?.peer?.metadata
+  const meta = v1MetaData || v2MetaData
 
   if (meta) {
     return {
@@ -71,7 +75,7 @@ export function useWalletMetaData(): WalletMetaData {
       return METADATA_DISCONNECTED
     }
 
-    if (connectionType === ConnectionType.WALLET_CONNECT) {
+    if (connectionType === ConnectionType.WALLET_CONNECT || connectionType === ConnectionType.WALLET_CONNECT_V2) {
       const wc = provider?.provider
 
       if ((wc as any)?.isWalletConnect) {
@@ -107,4 +111,15 @@ export function useIsSafeWallet(): boolean {
   if (!walletName) return false
 
   return GNOSIS_APP_NAMES.includes(walletName)
+}
+
+/**
+ * Detects whether the currently connected wallet is a Safe wallet
+ * but NOT loaded as a Safe App
+ */
+export function useIsSafeViaWc(): boolean {
+  const isSafeApp = useIsSafeApp()
+  const isSafeWallet = useIsSafeWallet()
+
+  return isSafeWallet && !isSafeApp
 }

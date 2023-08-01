@@ -1,20 +1,21 @@
+import { OrderKind } from '@cowprotocol/contracts'
 import { BigNumber } from '@ethersproject/bignumber'
-import BigNumberJs from 'bignumber.js'
-import * as Sentry from '@sentry/browser'
 
+import * as Sentry from '@sentry/browser'
+import BigNumberJs from 'bignumber.js'
+import { OptimalRate } from 'paraswap-core'
+import { FeeInformation, PriceInformation } from 'types'
+
+import { PRICE_API_TIMEOUT_MS } from 'legacy/constants'
+import { getCanonicalMarket, isPromiseFulfilled, withTimeout } from 'legacy/utils/misc'
+
+import {
+  getPriceQuote as getPriceQuote1inch,
+  PriceQuote1inch,
+  toPriceInformation as toPriceInformation1inch,
+} from 'api/1inch'
 import { getQuote } from 'api/gnosisProtocol'
 import GpQuoteError, { GpQuoteErrorCodes } from 'api/gnosisProtocol/errors/QuoteError'
-import { getCanonicalMarket, isPromiseFulfilled, withTimeout } from 'legacy/utils/misc'
-import { PRICE_API_TIMEOUT_MS } from 'legacy/constants'
-import { getPriceQuote as getPriceQuoteParaswap, toPriceInformation as toPriceInformationParaswap } from 'api/paraswap'
-import {
-  getPriceQuote as getPriceQuoteMatcha,
-  MatchaPriceQuote,
-  toPriceInformation as toPriceInformationMatcha,
-} from 'api/matcha-0x'
-
-import { OptimalRate } from 'paraswap-core'
-import { OrderKind } from '@cowprotocol/contracts'
 import {
   LegacyPriceInformationWithSource,
   LegacyPriceQuoteError,
@@ -22,12 +23,12 @@ import {
   LegacyPromiseRejectedResultWithSource,
   LegacyQuoteParams,
 } from 'api/gnosisProtocol/legacy/types'
-import { FeeInformation, PriceInformation } from 'types'
 import {
-  getPriceQuote as getPriceQuote1inch,
-  PriceQuote1inch,
-  toPriceInformation as toPriceInformation1inch,
-} from 'api/1inch'
+  getPriceQuote as getPriceQuoteMatcha,
+  MatchaPriceQuote,
+  toPriceInformation as toPriceInformationMatcha,
+} from 'api/matcha-0x'
+import { getPriceQuote as getPriceQuoteParaswap, toPriceInformation as toPriceInformationParaswap } from 'api/paraswap'
 
 /**
  * ************************************************** *
@@ -254,7 +255,8 @@ export async function getBestQuoteLegacy({
   fetchFee,
   previousFee,
 }: Omit<LegacyQuoteParams, 'strategy'>): Promise<QuoteResult> {
-  const { sellToken, buyToken, fromDecimals, toDecimals, amount, kind, chainId, userAddress, validTo } = quoteParams
+  const { sellToken, buyToken, fromDecimals, toDecimals, amount, kind, chainId, userAddress, validTo, priceQuality } =
+    quoteParams
   const { baseToken, quoteToken } = getCanonicalMarket({ sellToken, buyToken, kind })
   // Get a new fee quote (if required)
   const feePromise =
@@ -296,6 +298,7 @@ export async function getBestQuoteLegacy({
           kind,
           userAddress,
           validTo,
+          priceQuality,
         })
       : // fee exceeds our price, is invalid
         Promise.reject(FEE_EXCEEDS_FROM_ERROR)

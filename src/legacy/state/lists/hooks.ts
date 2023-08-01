@@ -1,25 +1,30 @@
-import { ChainTokenMap, tokensToChainTokenMap } from 'lib/hooks/useTokenList/utils'
 import { useCallback, useMemo } from 'react'
-import sortByListPriority from 'legacy/utils/listSort'
+
+import { SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
+import DEFAULT_TOKEN_LIST from '@uniswap/default-token-list'
+import { Currency } from '@uniswap/sdk-core'
+import { TokenInfo } from '@uniswap/token-lists'
+
+import { shallowEqual } from 'react-redux'
+import { Nullish } from 'types'
+
+import { UNSUPPORTED_LIST_URLS } from 'legacy/constants/lists'
 import BROKEN_LIST from 'legacy/constants/tokenLists/broken.tokenlist.json'
 import UNSUPPORTED_TOKEN_LIST from 'legacy/constants/tokenLists/unsupported.tokenlist.json'
-import { DEFAULT_NETWORK_FOR_LISTS, UNSUPPORTED_LIST_URLS } from 'legacy/constants/lists'
 import { AppState } from 'legacy/state'
-import { SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
-import { useWalletInfo } from 'modules/wallet'
-import { supportedChainId } from 'legacy/utils/supportedChainId'
 import { useAppDispatch, useAppSelector } from 'legacy/state/hooks'
-import { shallowEqual } from 'react-redux'
-import { TokenInfo } from '@uniswap/token-lists'
-import { UnsupportedToken } from 'api/gnosisProtocol'
 import {
   addGpUnsupportedToken,
   AddGpUnsupportedTokenParams,
   removeGpUnsupportedToken,
   RemoveGpUnsupportedTokenParams,
 } from 'legacy/state/lists/actions'
-import { Currency } from '@uniswap/sdk-core'
-import DEFAULT_TOKEN_LIST from '@uniswap/default-token-list'
+import sortByListPriority from 'legacy/utils/listSort'
+
+import { useWalletInfo } from 'modules/wallet'
+
+import { UnsupportedToken } from 'api/gnosisProtocol'
+import { ChainTokenMap, tokensToChainTokenMap } from 'lib/hooks/useTokenList/utils'
 
 export type TokenAddressMap = ChainTokenMap
 
@@ -28,8 +33,7 @@ type Mutable<T> = {
 }
 
 export function useActiveListUrls(): string[] | undefined {
-  const { chainId: connectedChainId } = useWalletInfo()
-  const chainId = supportedChainId(connectedChainId) ?? DEFAULT_NETWORK_FOR_LISTS
+  const { chainId } = useWalletInfo()
   const activeListUrls = useAppSelector((state) => state.lists[chainId]?.activeListUrls, shallowEqual)
 
   return useMemo(() => {
@@ -38,8 +42,7 @@ export function useActiveListUrls(): string[] | undefined {
 }
 
 export function useAllLists(): AppState['lists'][ChainId]['byUrl'] {
-  const { chainId: connectedChainId } = useWalletInfo()
-  const chainId = supportedChainId(connectedChainId) ?? DEFAULT_NETWORK_FOR_LISTS
+  const { chainId } = useWalletInfo()
 
   return useAppSelector((state) => state.lists[chainId]?.byUrl, shallowEqual)
 }
@@ -161,8 +164,8 @@ export function useIsListActive(url: string): boolean {
 }
 
 export function useGpUnsupportedTokens(): UnsupportedToken | null {
-  const { chainId: connectedChainId } = useWalletInfo()
-  const chainId = supportedChainId(connectedChainId) ?? DEFAULT_NETWORK_FOR_LISTS
+  const { chainId } = useWalletInfo()
+
   return useAppSelector((state) => (chainId ? state.lists[chainId]?.gpUnsupportedTokens : null))
 }
 
@@ -192,6 +195,22 @@ export function useIsUnsupportedTokenGp() {
   )
 }
 
+export function useIsUnsupportedTokens() {
+  const gpUnsupportedTokens = useGpUnsupportedTokens()
+
+  return useCallback(
+    ({ sellToken, buyToken }: { sellToken: Nullish<string>; buyToken: Nullish<string> }) => {
+      if (!gpUnsupportedTokens) return false
+
+      return !!(
+        (sellToken && gpUnsupportedTokens[sellToken.toLowerCase()]) ||
+        (buyToken && gpUnsupportedTokens[buyToken.toLowerCase()])
+      )
+    },
+    [gpUnsupportedTokens]
+  )
+}
+
 export function useIsTradeUnsupported(
   inputCurrency: Currency | null | undefined,
   outputCurrency: Currency | null | undefined
@@ -204,9 +223,7 @@ export function useIsTradeUnsupported(
 }
 
 export function useInactiveListUrls(): string[] {
-  // MOD: adds { chainId } support to the hooks
-  const { chainId: connectedChainId } = useWalletInfo()
-  const chainId = supportedChainId(connectedChainId) ?? DEFAULT_NETWORK_FOR_LISTS
+  const { chainId } = useWalletInfo()
   const lists = useAllLists()
   const allActiveListUrls = useActiveListUrls()
   return Object.keys(lists).filter(

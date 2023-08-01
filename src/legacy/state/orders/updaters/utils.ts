@@ -1,11 +1,15 @@
-import { Order, OrderFulfillmentData, OrderStatus } from 'legacy/state/orders/actions'
-import { getOrder, OrderID } from 'api/gnosisProtocol'
-import { stringToCurrency } from 'legacy/state/swap/extension'
-import { formatSymbol } from 'utils/format'
-import { classifyOrder, OrderTransitionStatus } from 'legacy/state/orders/utils'
 import { SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
-import { formatTokenAmount } from 'utils/amountFormat'
 import { EnrichedOrder, OrderKind } from '@cowprotocol/cow-sdk'
+
+import { Order, OrderFulfillmentData, OrderStatus } from 'legacy/state/orders/actions'
+import { classifyOrder, OrderTransitionStatus } from 'legacy/state/orders/utils'
+import { stringToCurrency } from 'legacy/state/swap/extension'
+import { shortenAddress } from 'legacy/utils'
+
+import { getOrder, OrderID } from 'api/gnosisProtocol'
+import { formatTokenAmount } from 'utils/amountFormat'
+import { formatSymbol } from 'utils/format'
+import { getIsComposableCowChildOrder } from 'utils/orderUtils/getIsComposableCowChildOrder'
 
 export type OrderLogPopupMixData = OrderFulfillmentData | OrderID
 
@@ -22,12 +26,23 @@ export function computeOrderSummary({
   // if we can find the order from the API
   // and our specific order exists in our state, let's use that
   if (orderFromApi) {
-    const { buyToken, sellToken, sellAmount, feeAmount, buyAmount, executedBuyAmount, executedSellAmount } =
-      orderFromApi
+    const {
+      buyToken,
+      sellToken,
+      sellAmount,
+      feeAmount,
+      buyAmount,
+      executedBuyAmount,
+      executedSellAmount,
+      owner,
+      receiver,
+    } = orderFromApi
 
     if (orderFromStore) {
       const { inputToken, outputToken, status, kind } = orderFromStore
       const isFulfilled = status === OrderStatus.FULFILLED
+
+      if (!inputToken || !outputToken) return undefined
 
       // don't show amounts in atoms
       const inputAmount = isFulfilled
@@ -45,6 +60,10 @@ export function computeOrderSummary({
     } else {
       // We only have the API order info, let's at least use that
       summary = `Swap ${sellToken} for ${buyToken}`
+    }
+
+    if (owner && receiver && receiver !== owner) {
+      summary += ` to ${shortenAddress(receiver)}`
     }
   } else {
     console.log(`[state:orders:updater] computeFulfilledSummary::API data not yet in sync with blockchain`)
@@ -66,7 +85,9 @@ export async function fetchOrderPopupData(orderFromStore: Order, chainId: ChainI
   // Get order from API
   let orderFromApi: EnrichedOrder | null = null
   try {
-    orderFromApi = await getOrder(chainId, orderFromStore.id)
+    const isComposableCowChildOrder = getIsComposableCowChildOrder(orderFromStore)
+    // For ComposableCow child orders always request PROD order-book
+    orderFromApi = await getOrder(chainId, orderFromStore.id, isComposableCowChildOrder ? 'prod' : undefined)
   } catch (e: any) {
     console.debug(
       `[PendingOrdersUpdater] Failed to fetch order popup data on chain ${chainId} for order ${orderFromStore.id}`

@@ -1,25 +1,29 @@
-import styled from 'styled-components/macro'
-import { useOpenRandomFortune } from 'modules/fortune/hooks/useOpenRandomFortune'
 import { useAtom, useAtomValue } from 'jotai'
+import { useSetAtom } from 'jotai'
+import { useCallback, useMemo, useRef, useState } from 'react'
+
+import { Trans } from '@lingui/macro'
+import { X } from 'react-feather'
+import SVG from 'react-inlinesvg'
+import styled from 'styled-components/macro'
+
+import fortuneCookieImage from 'legacy/assets/cow-swap/fortune-cookie.png'
+import twitterImage from 'legacy/assets/cow-swap/twitter.svg'
+import { openFortuneCookieAnalytics, shareFortuneTwitterAnalytics } from 'legacy/components/analytics/events/cowFortune'
+import Confetti from 'legacy/components/Confetti'
+import { ExternalLink } from 'legacy/theme'
+import { addBodyClass, removeBodyClass } from 'legacy/utils/toggleBodyClass'
+
+import { useOpenRandomFortune } from 'modules/fortune/hooks/useOpenRandomFortune'
+import { lastCheckedFortuneAtom } from 'modules/fortune/state/checkedFortunesListAtom'
 import {
   fortuneStateAtom,
   isFortunesFeatureDisabledAtom,
   updateOpenFortuneAtom,
 } from 'modules/fortune/state/fortuneStateAtom'
-import { useUpdateAtom } from 'jotai/utils'
-import { lastCheckedFortuneAtom } from 'modules/fortune/state/checkedFortunesListAtom'
-import { useCallback, useMemo, useRef, useState } from 'react'
-import { SuccessBanner } from 'pages/Claim/styled'
-import { Trans } from '@lingui/macro'
-import SVG from 'react-inlinesvg'
-import twitterImage from 'legacy/assets/cow-swap/twitter.svg'
-import fortuneCookieImage from 'legacy/assets/cow-swap/fortune-cookie.png'
-import { ExternalLink } from 'legacy/theme'
-import { X } from 'react-feather'
-import Confetti from 'legacy/components/Confetti'
+
 import useInterval from 'lib/hooks/useInterval'
-import { sendEvent } from 'legacy/components/analytics'
-import { addBodyClass, removeBodyClass } from 'legacy/utils/toggleBodyClass'
+import { SuccessBanner } from 'pages/Claim/styled'
 
 const FortuneButton = styled.div<{ isDailyFortuneChecked: boolean }>`
   --size: 75px;
@@ -48,7 +52,7 @@ const FortuneButton = styled.div<{ isDailyFortuneChecked: boolean }>`
   `}
 
   &::before {
-    content: "";
+    content: '';
     display: block;
     height: 10px;
     width: 10px;
@@ -69,9 +73,9 @@ const FortuneButton = styled.div<{ isDailyFortuneChecked: boolean }>`
 
   &::after {
     --size: 90%;
-    content: "";
+    content: '';
     display: block;
-    background: url(${fortuneCookieImage}) no-repeat center 100%/contain;
+    background: url(${fortuneCookieImage}) no-repeat center 100% / contain;
     width: var(--size);
     height: var(--size);
     transition: transform 0.3s ease-in-out;
@@ -83,28 +87,27 @@ const FortuneButton = styled.div<{ isDailyFortuneChecked: boolean }>`
 
   @keyframes floating {
     0% {
-      transform: scale(1) rotate(10deg)
+      transform: scale(1) rotate(10deg);
     }
     50% {
-      transform: scale(1) rotate(-5deg)
+      transform: scale(1) rotate(-5deg);
     }
     52% {
-      transform: scale(1.2) rotate(-5deg)
+      transform: scale(1.2) rotate(-5deg);
     }
     54% {
-      transform: scale(1) rotate(-5deg)
+      transform: scale(1) rotate(-5deg);
     }
     56% {
-      transform: scale(1.2) rotate(-5deg)
+      transform: scale(1.2) rotate(-5deg);
     }
     58% {
-      transform: scale(1) rotate(-5deg)
+      transform: scale(1) rotate(-5deg);
     }
     100% {
-      transform: scale(1) rotate(10deg)
+      transform: scale(1) rotate(10deg);
     }
   }
-}
 `
 
 const FortuneBanner = styled.div`
@@ -286,7 +289,7 @@ const StyledCloseIcon = styled(X)`
 export function FortuneWidget() {
   const { openFortune } = useAtomValue(fortuneStateAtom)
   const lastCheckedFortune = useAtomValue(lastCheckedFortuneAtom)
-  const updateOpenFortune = useUpdateAtom(updateOpenFortuneAtom)
+  const updateOpenFortune = useSetAtom(updateOpenFortuneAtom)
   const [isFortunesFeatureDisabled, setIsFortunesFeatureDisabled] = useAtom(isFortunesFeatureDisabledAtom)
   const openRandomFortune = useOpenRandomFortune()
   const [isNewFortuneOpen, setIsNewFortuneOpen] = useState(false)
@@ -326,6 +329,7 @@ export function FortuneWidget() {
 
   const openFortuneModal = useCallback(() => {
     setIsFortunedShared(false)
+    openFortuneCookieAnalytics()
 
     // Add the 'noScroll' class on body, whenever the fortune modal is opened/closed.
     // This removes the inner scrollbar on the page body, to prevent showing double scrollbars.
@@ -343,10 +347,7 @@ export function FortuneWidget() {
   const onTweetShare = useCallback(() => {
     setIsFortunesFeatureDisabled(true)
     setIsFortunedShared(true)
-    sendEvent({
-      category: 'CoWFortune',
-      action: 'Share on Twitter',
-    })
+    shareFortuneTwitterAnalytics()
   }, [setIsFortunesFeatureDisabled])
 
   if (isFortunesFeatureDisabled && isDailyFortuneChecked && !openFortune) return null

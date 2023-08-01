@@ -1,11 +1,12 @@
+import { SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
+
+import { transparentize } from 'polished'
 import styled, { css } from 'styled-components/macro'
+
 import CowProtocolLogo from 'legacy/components/CowProtocolLogo'
 import { useCombinedBalance } from 'legacy/state/cowToken/hooks'
-import { SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
-import { transparentize } from 'polished'
-import { supportedChainId } from 'legacy/utils/supportedChainId'
+
 import { TokenAmount } from 'common/pure/TokenAmount'
-import { useWalletInfo } from 'modules/wallet'
 
 export const Wrapper = styled.div<{ isLoading: boolean }>`
   background-color: transparent;
@@ -79,12 +80,7 @@ interface CowBalanceButtonProps {
 }
 
 export default function CowBalanceButton({ onClick, isUpToSmall }: CowBalanceButtonProps) {
-  const { chainId } = useWalletInfo()
   const { balance, isLoading } = useCombinedBalance()
-
-  if (!supportedChainId(chainId)) {
-    return null
-  }
 
   return (
     <Wrapper isLoading={isLoading} onClick={onClick}>

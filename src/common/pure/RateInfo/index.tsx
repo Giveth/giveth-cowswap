@@ -1,30 +1,34 @@
 import React, { Dispatch, SetStateAction, useEffect, useMemo, useState } from 'react'
-import styled from 'styled-components/macro'
-import { Trans } from '@lingui/macro'
-import { Repeat } from 'react-feather'
-import { getQuoteCurrency } from 'common/services/getQuoteCurrency'
-import { getAddress } from 'utils/getAddress'
+
 import { SupportedChainId } from '@cowprotocol/cow-sdk'
 import { Currency, CurrencyAmount } from '@uniswap/sdk-core'
-import { usePrice } from 'common/hooks/usePrice'
+
+import { Trans } from '@lingui/macro'
 import { transparentize } from 'polished'
-import { TokenSymbol } from 'common/pure/TokenSymbol'
-import { TokenAmount } from 'common/pure/TokenAmount'
+import { Repeat } from 'react-feather'
+import styled from 'styled-components/macro'
+import { Nullish } from 'types'
+
+import { usePrice } from 'common/hooks/usePrice'
 import { FiatAmount } from 'common/pure/FiatAmount'
+import { TokenAmount } from 'common/pure/TokenAmount'
+import { TokenSymbol } from 'common/pure/TokenSymbol'
+import { getQuoteCurrency } from 'common/services/getQuoteCurrency'
+import { getAddress } from 'utils/getAddress'
 
 const DEFAULT_DECIMALS = 4
 
 export interface RateInfoParams {
   chainId: SupportedChainId | undefined
-  inputCurrencyAmount: CurrencyAmount<Currency> | null
-  outputCurrencyAmount: CurrencyAmount<Currency> | null
-  activeRateFiatAmount: CurrencyAmount<Currency> | null
-  invertedActiveRateFiatAmount: CurrencyAmount<Currency> | null
+  inputCurrencyAmount: Nullish<CurrencyAmount<Currency>>
+  outputCurrencyAmount: Nullish<CurrencyAmount<Currency>>
+  activeRateFiatAmount: Nullish<CurrencyAmount<Currency>>
+  invertedActiveRateFiatAmount: Nullish<CurrencyAmount<Currency>>
 }
 
 export interface RateInfoProps {
   className?: string
-  label?: string
+  label?: React.ReactNode
   stylized?: boolean
   noLabel?: boolean
   prependSymbol?: boolean
@@ -34,6 +38,7 @@ export interface RateInfoProps {
   isInvertedState?: [boolean, Dispatch<SetStateAction<boolean>>]
   rateInfoParams: RateInfoParams
   opacitySymbol?: boolean
+  noFiat?: boolean
 }
 
 const Wrapper = styled.div<{ stylized: boolean }>`
@@ -100,6 +105,7 @@ export const RateWrapper = styled.button`
   letter-spacing: -0.1px;
   text-align: right;
   font-weight: 500;
+  width: 100%;
 `
 
 export const FiatRate = styled.span`
@@ -128,6 +134,7 @@ export function RateInfo({
   prependSymbol = true,
   isInvertedState,
   opacitySymbol = false,
+  noFiat = false,
 }: RateInfoProps) {
   const { chainId, inputCurrencyAmount, outputCurrencyAmount, activeRateFiatAmount, invertedActiveRateFiatAmount } =
     rateInfoParams
@@ -146,8 +153,9 @@ export function RateInfo({
   }, [currentIsInverted, activeRate])
 
   const fiatAmount = useMemo(() => {
+    if (noFiat) return null
     return currentIsInverted ? invertedActiveRateFiatAmount : activeRateFiatAmount
-  }, [currentIsInverted, activeRateFiatAmount, invertedActiveRateFiatAmount])
+  }, [noFiat, currentIsInverted, invertedActiveRateFiatAmount, activeRateFiatAmount])
 
   const rateInputCurrency = useMemo(() => {
     return currentIsInverted ? outputCurrency : inputCurrency

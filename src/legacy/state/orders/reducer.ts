@@ -1,12 +1,22 @@
-import { createReducer, PayloadAction } from '@reduxjs/toolkit'
-import { OrderID } from 'api/gnosisProtocol'
 import { SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
+
+import { createReducer, PayloadAction } from '@reduxjs/toolkit'
+import { Writable } from 'types'
+
+import { flatOrdersStateNetwork } from 'modules/orders/utils/flatOrdersStateNetwork'
+
+import { OrderID } from 'api/gnosisProtocol'
+import { getIsComposableCowDiscreteOrder } from 'utils/orderUtils/getIsComposableCowDiscreteOrder'
+import { getIsComposableCowParentOrder } from 'utils/orderUtils/getIsComposableCowParentOrder'
+import { getIsNotComposableCowOrder } from 'utils/orderUtils/getIsNotComposableCowOrder'
+
 import {
   addOrUpdateOrders,
   addPendingOrder,
   cancelOrdersBatch,
   clearOrders,
   CREATING_STATES,
+  deleteOrders,
   expireOrdersBatch,
   fulfillOrdersBatch,
   invalidateOrdersBatch,
@@ -21,9 +31,10 @@ import {
   updateLastCheckedBlock,
   updateOrder,
   updatePresignGnosisSafeTx,
+  clearOrdersStorage,
+  CONFIRMED_STATES,
 } from './actions'
-import { ContractDeploymentBlocks } from './consts'
-import { Writable } from 'types'
+import { ContractDeploymentBlocks, MAX_ITEMS_PER_STATUS } from './consts'
 
 export interface OrderObject {
   id: OrderID
@@ -51,6 +62,7 @@ export type OrderLists = {
   cancelled: PartialOrdersMap
   creating: PartialOrdersMap
   failed: PartialOrdersMap
+  scheduled: PartialOrdersMap
 }
 
 export interface OrdersStateNetwork extends OrderLists {
@@ -67,7 +79,14 @@ export interface PrefillStateRequired {
 
 export type EthFlowOrderTypes = 'creating' | 'failed'
 export type PreSignOrderTypes = 'presignaturePending'
-export type OrderTypeKeys = 'pending' | PreSignOrderTypes | 'expired' | 'fulfilled' | 'cancelled' | EthFlowOrderTypes
+export type OrderTypeKeys =
+  | 'pending'
+  | PreSignOrderTypes
+  | 'expired'
+  | 'fulfilled'
+  | 'cancelled'
+  | EthFlowOrderTypes
+  | 'scheduled'
 
 export const ORDER_LIST_KEYS: OrderTypeKeys[] = [
   'pending',
@@ -77,6 +96,7 @@ export const ORDER_LIST_KEYS: OrderTypeKeys[] = [
   'cancelled',
   'creating',
   'failed',
+  'scheduled',
 ]
 export const ORDERS_LIST: OrderLists = {
   pending: {},
@@ -86,6 +106,7 @@ export const ORDERS_LIST: OrderLists = {
   cancelled: {},
   creating: {},
   failed: {},
+  scheduled: {},
 }
 
 function getDefaultLastCheckedBlock(chainId: ChainId): number {
@@ -132,6 +153,7 @@ function getOrderById(state: Required<OrdersState>, chainId: ChainId, id: string
     stateForChain.expired[id] ||
     stateForChain.fulfilled[id] ||
     stateForChain.creating[id] ||
+    stateForChain.scheduled[id] ||
     stateForChain.failed[id]
   )
 }
@@ -145,6 +167,7 @@ function deleteOrderById(state: Required<OrdersState>, chainId: ChainId, id: str
   delete stateForChain.cancelled[id]
   delete stateForChain.creating[id]
   delete stateForChain.failed[id]
+  delete stateForChain.scheduled[id]
 }
 
 function addOrderToState(
@@ -172,6 +195,36 @@ function popOrder(state: OrdersState, chainId: ChainId, status: OrderStatus, id:
 
 function getValidTo(apiAdditionalInfo: OrderInfoApi | undefined, order: SerializedOrder): number {
   return (apiAdditionalInfo?.ethflowData?.userValidTo || order.validTo) as number
+}
+
+function cancelOrderInState(state: Required<OrdersState>, chainId: ChainId, orderObject: OrderObject) {
+  const id = orderObject.id
+
+  deleteOrderById(state, chainId, id)
+
+  orderObject.order.status = OrderStatus.CANCELLED
+  orderObject.order.isCancelling = false
+
+  addOrderToState(state, chainId, id, 'cancelled', orderObject.order)
+}
+
+function _orderSorterByExpirationTime(a: OrderObject | undefined, b: OrderObject | undefined) {
+  const validToA = Number(a?.order.validTo)
+  const validToB = Number(b?.order.validTo)
+
+  if (!validToA || !validToB) {
+    return -1
+  }
+
+  const expirationTimeB = Number(new Date(validToB * 1000))
+  const expirationTimeA = Number(new Date(validToA * 1000))
+
+  return expirationTimeB - expirationTimeA
+}
+
+function _toPartialsOrderMap(acc: PartialOrdersMap, element: OrderObject | undefined) {
+  element && (acc[element.id] = element)
+  return acc
 }
 
 const initialState: OrdersState = {}
@@ -245,14 +298,23 @@ export default createReducer(initialState, (builder) =>
           popOrder(state, chainId, OrderStatus.PENDING, id) ||
           popOrder(state, chainId, OrderStatus.PRESIGNATURE_PENDING, id) ||
           popOrder(state, chainId, OrderStatus.CREATING, id) ||
+          popOrder(state, chainId, OrderStatus.SCHEDULED, id) ||
           popOrder(state, chainId, OrderStatus.FAILED, id)
 
         const validTo = getValidTo(newOrder.apiAdditionalInfo, newOrder)
+
+        // Skip overriding pending orders, because they get updated in CreatedInOrderBookOrdersUpdater
+        if (getIsComposableCowDiscreteOrder(orderObj?.order) && getIsNotComposableCowOrder(newOrder)) {
+          return
+        }
+
         // merge existing and new order objects
         const order = orderObj
           ? {
               ...orderObj.order,
               validTo,
+              creationTime: newOrder.creationTime,
+              composableCowInfo: newOrder.composableCowInfo,
               apiAdditionalInfo: newOrder.apiAdditionalInfo,
               isCancelling: newOrder.isCancelling,
               class: newOrder.class,
@@ -368,12 +430,21 @@ export default createReducer(initialState, (builder) =>
         const orderObject = getOrderById(state, chainId, id)
 
         if (orderObject) {
-          deleteOrderById(state, chainId, id)
+          cancelOrderInState(state, chainId, orderObject)
 
-          orderObject.order.status = OrderStatus.CANCELLED
-          orderObject.order.isCancelling = false
+          if (getIsComposableCowParentOrder(orderObject.order)) {
+            const allOrdersMap = flatOrdersStateNetwork(state[chainId])
 
-          addOrderToState(state, chainId, id, 'cancelled', orderObject.order)
+            const children = Object.values(allOrdersMap).filter(
+              (item) => item?.order.composableCowInfo?.parentId === id
+            )
+
+            children.forEach((child) => {
+              if (!child) return
+
+              cancelOrderInState(state, chainId, child)
+            })
+          }
         }
       })
     })
@@ -415,6 +486,41 @@ export default createReducer(initialState, (builder) =>
           orderObject.order.isRefunded = true
           orderObject.order.refundHash = refundHash
         }
+      })
+    })
+    .addCase(deleteOrders, (state, action) => {
+      prefillState(state, action)
+
+      const { chainId, ids } = action.payload
+
+      ids.forEach((id) => {
+        deleteOrderById(state, chainId, id)
+      })
+    })
+    .addCase(clearOrdersStorage, (state) => {
+      Object.keys(state).forEach((_chainId) => {
+        const chainId = _chainId as unknown as ChainId
+        const orderListByChain = state[chainId]
+
+        // Iterate order statuses we want to clean up
+        CONFIRMED_STATES.forEach((status) => {
+          const orders = orderListByChain?.[status]
+
+          if (!orders) {
+            return
+          }
+
+          // Sort by expiration time
+          const ordersCleaned = Object.values(orders)
+            .sort(_orderSorterByExpirationTime)
+            // Take top n orders
+            .slice(0, MAX_ITEMS_PER_STATUS)
+            // Return back to appropriate data structure
+            .reduce<PartialOrdersMap>(_toPartialsOrderMap, {})
+
+          // Update parts of the state, with the "cleaned" ones
+          orderListByChain[status] = ordersCleaned
+        })
       })
     })
 )

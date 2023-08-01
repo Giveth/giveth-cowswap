@@ -11,6 +11,7 @@ export interface ReplaceOnlyTradeRawStatePayload {
   readonly outputCurrencyId?: string
   readonly recipient: string | null
   readonly withDonation?: boolean
+  readonly recipientAddress: string | null
 }
 
 export interface ReplaceSwapStatePayload extends ReplaceOnlyTradeRawStatePayload {
@@ -28,4 +29,5 @@ export const typeInput = createAction<{ field: Field; typedValue: string }>('swa
 export const replaceOnlyTradeRawState = createAction<ReplaceOnlyTradeRawStatePayload>('swap/replaceOnlyTradeRawState')
 export const replaceSwapState = createAction<ReplaceSwapStatePayload>('swap/replaceSwapState')
 export const setRecipient = createAction<{ recipient: string | null }>('swap/setRecipient')
+export const setRecipientAddress = createAction<{ recipientAddress: string | null }>('swap/setRecipientAddress')
 export const setWithDonation = createAction<{ withDonation: boolean }>('swap/setWithDonation')

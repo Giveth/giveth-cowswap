@@ -1,7 +1,10 @@
-import ReactGA from 'react-ga4'
 import { ErrorInfo } from 'react'
+
+import ReactGA from 'react-ga4'
 import { GaOptions, InitOptions, UaEventOptions } from 'react-ga4/types/ga4'
+
 import { debounce } from 'legacy/utils/misc'
+
 import { Dimensions } from '../types'
 
 const DIMENSION_MAP = {
@@ -9,6 +12,7 @@ const DIMENSION_MAP = {
   [Dimensions.walletName]: 'dimension2',
   [Dimensions.customBrowserType]: 'dimension3',
   [Dimensions.userAddress]: 'dimension4',
+  [Dimensions.market]: 'dimension5',
 }
 
 type DimensionKey = keyof typeof DIMENSION_MAP
@@ -25,6 +29,7 @@ export class GAProvider {
       walletName: '',
       customBrowserType: '',
       userAddress: '',
+      market: '',
     }
   }
 

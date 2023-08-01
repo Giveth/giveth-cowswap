@@ -1,25 +1,28 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+
+import { MerkleDrop, TokenDistro, MerkleDropAbi, TokenDistroAbi } from '@cowprotocol/abis'
+import { SupportedChainId } from '@cowprotocol/cow-sdk'
 import { ContractTransaction } from '@ethersproject/contracts'
 import { CurrencyAmount, Token } from '@uniswap/sdk-core'
-import MERKLE_DROP_ABI from 'abis/MerkleDrop.json'
-import TOKEN_DISTRO_ABI from 'abis/TokenDistro.json'
-import { MerkleDrop, TokenDistro } from 'abis/types'
-import { useSingleCallResult } from 'lib/hooks/multicall'
-import { useTransactionAdder } from 'legacy/state/enhancedTransactions/hooks'
-import { useContract } from 'legacy/hooks/useContract'
-import { COW as COW_TOKENS } from 'legacy/constants/tokens'
-import { SupportedChainId } from '@cowprotocol/cow-sdk'
-import { OperationType } from 'legacy/components/TransactionConfirmationModal'
-import { fetchClaim } from './claimData'
-import { MERKLE_DROP_CONTRACT_ADDRESSES, TOKEN_DISTRO_CONTRACT_ADDRESSES } from 'legacy/constants/tokens'
+
+import { ConfirmOperationType } from 'legacy/components/TransactionConfirmationModal'
 import { LOCKED_GNO_VESTING_START_TIME, LOCKED_GNO_VESTING_DURATION } from 'legacy/constants'
+import { COW as COW_TOKENS } from 'legacy/constants/tokens'
+import { MERKLE_DROP_CONTRACT_ADDRESSES, TOKEN_DISTRO_CONTRACT_ADDRESSES } from 'legacy/constants/tokens'
+import { useContract } from 'legacy/hooks/useContract'
+import { useTransactionAdder } from 'legacy/state/enhancedTransactions/hooks'
+
 import { useWalletInfo } from 'modules/wallet'
+
+import { useSingleCallResult } from 'lib/hooks/multicall'
+
+import { fetchClaim } from './claimData'
 
 // We just generally use the mainnet version. We don't read from the contract anyways so the address doesn't matter
 const COW = COW_TOKENS[SupportedChainId.MAINNET]
 
-const useMerkleDropContract = () => useContract<MerkleDrop>(MERKLE_DROP_CONTRACT_ADDRESSES, MERKLE_DROP_ABI, true)
-const useTokenDistroContract = () => useContract<TokenDistro>(TOKEN_DISTRO_CONTRACT_ADDRESSES, TOKEN_DISTRO_ABI, true)
+const useMerkleDropContract = () => useContract<MerkleDrop>(MERKLE_DROP_CONTRACT_ADDRESSES, MerkleDropAbi, true)
+const useTokenDistroContract = () => useContract<TokenDistro>(TOKEN_DISTRO_CONTRACT_ADDRESSES, TokenDistroAbi, true)
 
 export const useAllocation = (): CurrencyAmount<Token> => {
   const { chainId, account } = useWalletInfo()
@@ -67,7 +70,7 @@ export const useCowFromLockedGnoBalances = () => {
 }
 
 interface ClaimCallbackParams {
-  openModal: (message: string, operationType: OperationType) => void
+  openModal: (message: string, operationType: ConfirmOperationType) => void
   closeModal: () => void
   isFirstClaim: boolean
 }
@@ -102,7 +105,7 @@ export function useClaimCowFromLockedGnoCallback({
     // Afterwards the allocation will be already in the tokenDistro contract and we can just claim it there.
     const claimPromise = isFirstClaim ? merkleDrop.claim(index, amount, proof) : tokenDistro.claim()
     const summary = 'Claim vested COW'
-    openModal(summary, OperationType.CLAIM_VESTED_COW)
+    openModal(summary, ConfirmOperationType.CLAIM_VESTED_COW)
 
     return claimPromise
       .then((tx) => {

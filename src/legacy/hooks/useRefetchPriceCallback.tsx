@@ -1,30 +1,34 @@
 import { useCallback } from 'react'
 
-import { getBestQuote, getFastQuote, QuoteResult } from 'legacy/utils/price'
-import { isValidOperatorError, ApiErrorCodes } from 'api/gnosisProtocol/errors/OperatorError'
-import GpQuoteError, {
-  GpQuoteErrorCodes,
-  GpQuoteErrorDetails,
-  isValidQuoteError,
-} from 'api/gnosisProtocol/errors/QuoteError'
-import { registerOnWindow, getPromiseFulfilledValue, isPromiseFulfilled } from 'legacy/utils/misc'
+import { PriceQuality } from '@cowprotocol/cow-sdk'
 
+import { useGetGpPriceStrategy } from 'legacy/hooks/useGetGpPriceStrategy'
 import { isOnline } from 'legacy/hooks/useIsOnline'
+import { AddGpUnsupportedTokenParams } from 'legacy/state/lists/actions'
 import {
   useAddGpUnsupportedToken,
   useIsUnsupportedTokenGp,
   useRemoveGpUnsupportedToken,
 } from 'legacy/state/lists/hooks'
-import { QuoteInformationObject } from 'legacy/state/price/reducer'
-import { useQuoteDispatchers } from 'legacy/state/price/hooks'
-import { AddGpUnsupportedTokenParams } from 'legacy/state/lists/actions'
 import { QuoteError } from 'legacy/state/price/actions'
-import { CancelableResult, onlyResolvesLast } from 'legacy/utils/async'
+import { useQuoteDispatchers } from 'legacy/state/price/hooks'
+import { QuoteInformationObject } from 'legacy/state/price/reducer'
 import { useUserTransactionTTL } from 'legacy/state/user/hooks'
+import { CancelableResult, onlyResolvesLast } from 'legacy/utils/async'
+import { getPromiseFulfilledValue, isPromiseFulfilled, registerOnWindow } from 'legacy/utils/misc'
+import { getBestQuote, getFastQuote, QuoteResult } from 'legacy/utils/price'
+
+import { useIsEoaEthFlow } from 'modules/swap/hooks/useIsEoaEthFlow'
+
+import { ApiErrorCodes, isValidOperatorError } from 'api/gnosisProtocol/errors/OperatorError'
+import GpQuoteError, {
+  GpQuoteErrorCodes,
+  GpQuoteErrorDetails,
+  isValidQuoteError,
+} from 'api/gnosisProtocol/errors/QuoteError'
 import { LegacyFeeQuoteParams, LegacyQuoteParams } from 'api/gnosisProtocol/legacy/types'
-import { useIsEthFlow } from 'modules/swap/hooks/useIsEthFlow'
+import { getQuoteUnsupportedToken } from 'utils/getQuoteUnsupportedToken'
 import { calculateValidTo } from 'utils/time'
-import { useGetGpPriceStrategy } from 'legacy/hooks/useGetGpPriceStrategy'
 
 interface HandleQuoteErrorParams {
   quoteData: QuoteInformationObject | LegacyFeeQuoteParams
@@ -34,19 +38,11 @@ interface HandleQuoteErrorParams {
 
 type QuoteParamsForFetching = Omit<LegacyQuoteParams, 'strategy'>
 
-function isMessageIncludeToken(message: string, tokenAddress: string): string | null {
-  if (message.toLowerCase().includes(tokenAddress.toLowerCase())) return tokenAddress
-
-  return null
-}
-
 export function handleQuoteError({ quoteData, error, addUnsupportedToken }: HandleQuoteErrorParams): QuoteError {
   if (isValidOperatorError(error)) {
     switch (error.type) {
       case ApiErrorCodes.UnsupportedToken: {
-        const unsupportedTokenAddress =
-          isMessageIncludeToken(error.description, quoteData.sellToken) ||
-          isMessageIncludeToken(error.description, quoteData.buyToken)
+        const unsupportedTokenAddress = getQuoteUnsupportedToken(error, quoteData)
         console.error(`${error.message}: ${error.description} - disabling.`)
 
         // Add token to unsupported token list
@@ -85,9 +81,7 @@ export function handleQuoteError({ quoteData, error, addUnsupportedToken }: Hand
 
       case GpQuoteErrorCodes.UnsupportedToken: {
         // TODO: will change with introduction of data prop in error responses
-        const unsupportedTokenAddress =
-          isMessageIncludeToken(error.description, quoteData.sellToken) ||
-          isMessageIncludeToken(error.description, quoteData.buyToken)
+        const unsupportedTokenAddress = getQuoteUnsupportedToken(error, quoteData)
         console.error(`${error.message}: ${error.description} - disabling.`)
 
         // Add token to unsupported token list
@@ -137,7 +131,7 @@ export function useRefetchQuoteCallback() {
   const removeGpUnsupportedToken = useRemoveGpUnsupportedToken()
   const strategy = useGetGpPriceStrategy()
   const [deadline] = useUserTransactionTTL()
-  const isEthFlow = useIsEthFlow()
+  const isEoaEthFlow = useIsEoaEthFlow()
 
   registerOnWindow({
     getNewQuote,
@@ -153,7 +147,7 @@ export function useRefetchQuoteCallback() {
       const { quoteParams, isPriceRefresh } = params
       // set the validTo time here
       quoteParams.validTo = calculateValidTo(deadline)
-      quoteParams.isEthFlow = isEthFlow
+      quoteParams.isEthFlow = isEoaEthFlow
 
       let quoteData: LegacyFeeQuoteParams | QuoteInformationObject = quoteParams
 
@@ -234,8 +228,18 @@ export function useRefetchQuoteCallback() {
       }
 
       // Init get quote methods params
-      const bestQuoteParams = { ...params, strategy }
-      const fastQuoteParams = { quoteParams: { ...quoteParams, priceQuality: 'fast' } }
+
+      const bestQuoteParams = {
+        ...params,
+        strategy,
+        quoteParams,
+      }
+      const fastQuoteParams = {
+        quoteParams: {
+          ...quoteParams,
+          priceQuality: PriceQuality.FAST,
+        },
+      }
 
       // Register get best and fast quote methods on window
       registerOnWindow({
@@ -258,7 +262,7 @@ export function useRefetchQuoteCallback() {
         .catch(handleError)
     },
     [
-      isEthFlow,
+      isEoaEthFlow,
       deadline,
       strategy,
       isUnsupportedTokenGp,

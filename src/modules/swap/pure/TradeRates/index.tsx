@@ -1,11 +1,16 @@
 import React from 'react'
-import * as styledEl from './styled'
-import TradeGp from 'legacy/state/swap/TradeGp'
-import { RowDeadline } from 'modules/swap/containers/Row/RowDeadline'
+
 import { Currency, CurrencyAmount, Percent } from '@uniswap/sdk-core'
+
+import TradeGp from 'legacy/state/swap/TradeGp'
+
+import { RowDeadline } from 'modules/swap/containers/Row/RowDeadline'
 import { TradeBasicDetails } from 'modules/swap/containers/TradeBasicDetails'
-import { genericPropsChecker } from 'utils/genericPropsChecker'
+
 import { RateInfoParams } from 'common/pure/RateInfo'
+import { genericPropsChecker } from 'utils/genericPropsChecker'
+
+import * as styledEl from './styled'
 
 // const SUBSIDY_INFO_MESSAGE_EXTENDED =
 //   SUBSIDY_INFO_MESSAGE + '. Click on the discount button on the right for more info.'
@@ -38,7 +43,6 @@ export const TradeRates = React.memo(function (props: TradeRatesProps) {
     donationAmount,
   } = props
   // const openCowSubsidyModal = useOpenModal(ApplicationModal.COW_SUBSIDY)
-
   const showPrice = !!trade
   const showTradeBasicDetails = (isFeeGreater || trade) && fee
   const showRowDeadline = !!trade

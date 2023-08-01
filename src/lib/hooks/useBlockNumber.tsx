@@ -1,7 +1,8 @@
-import { useWalletInfo } from 'modules/wallet'
-import { useWeb3React } from '@web3-react/core'
-import useIsWindowVisible from 'legacy/hooks/useIsWindowVisible'
 import { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+
+import { useWeb3React } from '@web3-react/core'
+
+import useIsWindowVisible from 'legacy/hooks/useIsWindowVisible'
 
 const MISSING_PROVIDER = Symbol()
 const BlockNumberContext = createContext<
@@ -30,8 +31,7 @@ export function useFastForwardBlockNumber(): (block: number) => void {
 }
 
 export function BlockNumberProvider({ children }: { children: ReactNode }) {
-  const { provider } = useWeb3React()
-  const { chainId: activeChainId } = useWalletInfo()
+  const { provider, chainId: activeChainId } = useWeb3React()
   const [{ chainId, block }, setChainBlock] = useState<{ chainId?: number; block?: number }>({ chainId: activeChainId })
 
   const onBlock = useCallback(

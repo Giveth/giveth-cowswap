@@ -1,29 +1,33 @@
 import { atom } from 'jotai'
 import { atomWithStorage } from 'jotai/utils'
 
+import { buildDocFilterFn, buildInverseDocFilterFn } from './utils'
+
 import {
-  UploadAppDataParams,
-  AppDataPendingToUpload,
   AppDataInfo,
+  AppDataPendingToUpload,
   RemoveAppDataFromUploadQueueParams,
   UpdateAppDataOnUploadQueueParams,
+  UploadAppDataParams,
 } from '../types'
-import { buildDocFilterFn, buildInverseDocFilterFn } from './utils'
-import { updateAppDataHash } from '../utils/appDataHash'
+import { updateFullAppData } from '../utils/fullAppData'
 
 /**
  * Base atom that store the current appDataInfo
  */
-export const appDataInfoAtom = atom<AppDataInfo | null, AppDataInfo | null>(null, (get, set, appDataInfo) => {
-  set(appDataInfoAtom, appDataInfo)
-  updateAppDataHash(appDataInfo?.hash ?? undefined)
-})
+export const appDataInfoAtom = atom<AppDataInfo | null, [AppDataInfo | null], unknown>(
+  null,
+  (_get, set, appDataInfo) => {
+    set(appDataInfoAtom, appDataInfo)
+    updateFullAppData(appDataInfo?.fullAppData ?? undefined)
+  }
+)
 
 /**
  * Base atom that stores all appData pending to be uploaded
  */
 export const appDataUploadQueueAtom = atomWithStorage<AppDataPendingToUpload>(
-  'appDataUploadQueue', // local storage key
+  'appDataUploadQueue:v1', // local storage key
   []
 )
 

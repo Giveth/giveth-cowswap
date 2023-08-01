@@ -1,27 +1,31 @@
 import { useEffect, useMemo } from 'react'
 
-import { DEFAULT_DECIMALS } from 'legacy/constants'
-
-import { LegacyFeeQuoteParams as LegacyFeeQuoteParamsFull } from 'api/gnosisProtocol/legacy/types'
 import { OrderKind } from '@cowprotocol/cow-sdk'
 
-import { useDerivedSwapInfo, useSwapState } from 'legacy/state/swap/hooks'
-import tryParseCurrencyAmount from 'lib/utils/tryParseCurrencyAmount'
-import { Field } from 'legacy/state/swap/actions'
-import { useIsUnsupportedTokenGp } from 'legacy/state/lists/hooks'
-
-import useIsWindowVisible from 'legacy/hooks/useIsWindowVisible'
-import { useAllQuotes, useIsBestQuoteLoading, useSetQuoteError } from './hooks'
-import { useRefetchQuoteCallback } from 'legacy/hooks/useRefetchPriceCallback'
+import { DEFAULT_DECIMALS } from 'legacy/constants'
 import useDebounce from 'legacy/hooks/useDebounce'
+import useENSAddress from 'legacy/hooks/useENSAddress'
 import useIsOnline from 'legacy/hooks/useIsOnline'
-import { QuoteInformationObject } from './reducer'
+import useIsWindowVisible from 'legacy/hooks/useIsWindowVisible'
+import { useRefetchQuoteCallback } from 'legacy/hooks/useRefetchPriceCallback'
+import { useIsUnsupportedTokenGp } from 'legacy/state/lists/hooks'
+import { Field } from 'legacy/state/swap/actions'
+import { useDerivedSwapInfo, useSwapState } from 'legacy/state/swap/hooks'
 import { isWrappingTrade } from 'legacy/state/swap/utils'
 import { useOrderValidTo } from 'legacy/state/user/hooks'
 import { isAddress } from 'legacy/utils'
-import useENSAddress from 'legacy/hooks/useENSAddress'
-import { useIsEthFlow } from 'modules/swap/hooks/useIsEthFlow'
+
+import { useIsEoaEthFlow } from 'modules/swap/hooks/useIsEoaEthFlow'
+import { useEnoughBalanceAndAllowance } from 'modules/tokens'
 import { useWalletInfo } from 'modules/wallet'
+
+import { getPriceQuality } from 'api/gnosisProtocol/api'
+import { LegacyFeeQuoteParams as LegacyFeeQuoteParamsFull } from 'api/gnosisProtocol/legacy/types'
+import { useVerifiedQuotesEnabled } from 'common/hooks/featureFlags/useVerifiedQuotesEnabled'
+import tryParseCurrencyAmount from 'lib/utils/tryParseCurrencyAmount'
+
+import { useAllQuotes, useIsBestQuoteLoading, useSetQuoteError } from './hooks'
+import { QuoteInformationObject } from './reducer'
 
 export const TYPED_VALUE_DEBOUNCE_TIME = 350
 const REFETCH_CHECK_INTERVAL = 10000 // Every 10s
@@ -117,12 +121,16 @@ function isRefetchQuoteRequired(
 
 export default function FeesUpdater(): null {
   const { chainId, account } = useWalletInfo()
+  const verifiedQuotesEnabled = useVerifiedQuotesEnabled(chainId)
 
   const { independentField, typedValue: rawTypedValue, recipient } = useSwapState()
   const {
     currencies: { INPUT: sellCurrency, OUTPUT: buyCurrency },
     currenciesIds: { INPUT: sellCurrencyId, OUTPUT: buyCurrencyId },
+    parsedAmount,
   } = useDerivedSwapInfo()
+
+  const enoughBalance = useEnoughBalanceAndAllowance({ account, amount: parsedAmount })
 
   const { address: ensRecipientAddress } = useENSAddress(recipient)
   const receiver = ensRecipientAddress || recipient
@@ -138,7 +146,7 @@ export default function FeesUpdater(): null {
   }, [quotesMap, sellCurrencyId])
 
   const isLoading = useIsBestQuoteLoading()
-  const isEthFlow = useIsEthFlow()
+  const isEthFlow = useIsEoaEthFlow()
 
   const isUnsupportedTokenGp = useIsUnsupportedTokenGp()
 
@@ -199,6 +207,7 @@ export default function FeesUpdater(): null {
       userAddress: account,
       validTo,
       isEthFlow,
+      priceQuality: getPriceQuality({ verifyQuote: enoughBalance && verifiedQuotesEnabled }),
     }
 
     // Don't refetch if offline.
@@ -269,6 +278,8 @@ export default function FeesUpdater(): null {
     validTo,
     buyTokenAddressInvalid,
     sellTokenAddressInvalid,
+    enoughBalance,
+    verifiedQuotesEnabled,
   ])
 
   return null

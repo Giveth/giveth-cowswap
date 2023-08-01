@@ -1,6 +1,10 @@
-import { createReducer } from '@reduxjs/toolkit'
-import { parsedQueryString } from 'legacy/hooks/useParsedQueryString'
+import { SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
 
+import { createReducer } from '@reduxjs/toolkit'
+
+import { NATIVE_CURRENCY_BUY_TOKEN } from 'legacy/constants'
+import { WRAPPED_NATIVE_CURRENCY } from 'legacy/constants/tokens'
+import { parsedQueryString } from 'legacy/hooks/useParsedQueryString'
 import {
   Field,
   replaceOnlyTradeRawState,
@@ -8,13 +12,15 @@ import {
   selectCurrency,
   setRecipient,
   setWithDonation,
+  setRecipientAddress,
   switchCurrencies,
   typeInput,
 } from 'legacy/state/swap/actions'
 import { queryParametersToSwapState } from 'legacy/state/swap/hooks'
-import { NATIVE_CURRENCY_BUY_TOKEN } from 'legacy/constants'
-import { WRAPPED_NATIVE_CURRENCY } from 'legacy/constants/tokens'
-import { SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
+
+import { getIsNativeToken } from 'utils/getIsNativeToken'
+import { getIsWrapOrUnwrap } from 'utils/getIsWrapOrUnwrap'
+
 export interface SwapState {
   // Mod: added chainId
   chainId: number | null
@@ -29,6 +35,9 @@ export interface SwapState {
   // the typed recipient address or ENS name, or null if swap should go to sender
   readonly recipient: string | null
   readonly withDonation: boolean
+
+  // this only stores address or null, not ENS
+  readonly recipientAddress: string | null
 }
 
 // Mod: added second parameter
@@ -42,6 +51,7 @@ export default createReducer<SwapState>(initialState, (builder) =>
         chainId,
         typedValue: originalTypedValue,
         recipient,
+        recipientAddress,
         independentField: originalIndependentField,
         inputCurrencyId,
         outputCurrencyId,
@@ -67,6 +77,7 @@ export default createReducer<SwapState>(initialState, (builder) =>
         typedValue,
         recipient,
         withDonation: withDonation ?? false,
+        recipientAddress,
       }
     })
     .addCase(replaceOnlyTradeRawState, (state, { payload }) => {
@@ -135,6 +146,9 @@ export default createReducer<SwapState>(initialState, (builder) =>
     .addCase(setWithDonation, (state, { payload: { withDonation } }) => {
       state.withDonation = withDonation
     })
+    .addCase(setRecipientAddress, (state, { payload: { recipientAddress } }) => {
+      state.recipientAddress = recipientAddress
+    })
 )
 
 /**
@@ -148,10 +162,16 @@ export default createReducer<SwapState>(initialState, (builder) =>
 function getEthFlowOverridesOnSwitch(state: SwapState): Pick<SwapState, 'independentField' | 'typedValue'> {
   const chainId: ChainId = state.chainId || ChainId.MAINNET
 
-  const isNativeOut =
-    state[Field.OUTPUT].currencyId?.toUpperCase() === NATIVE_CURRENCY_BUY_TOKEN[chainId].symbol?.toUpperCase()
-  const isWrappedIn =
-    state[Field.INPUT].currencyId?.toUpperCase() === WRAPPED_NATIVE_CURRENCY[chainId].symbol?.toUpperCase()
+  const inputCurrencyId = state[Field.INPUT].currencyId?.toUpperCase()
+  const outputCurrencyId = state[Field.OUTPUT].currencyId?.toUpperCase()
+
+  const isNativeOut = getIsNativeToken(chainId, outputCurrencyId || '')
+  const isWrapUnwrap = getIsWrapOrUnwrap(chainId, inputCurrencyId, outputCurrencyId)
+  const isWrappedIn = inputCurrencyId === WRAPPED_NATIVE_CURRENCY[chainId].symbol?.toUpperCase()
+
+  if (isWrapUnwrap) {
+    return state
+  }
 
   const formerIndependentField = state.independentField
 

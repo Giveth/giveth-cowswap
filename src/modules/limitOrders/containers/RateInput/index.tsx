@@ -1,26 +1,30 @@
-import * as styledEl from './styled'
+import { useAtomValue, useSetAtom } from 'jotai'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { RefreshCw } from 'react-feather'
-import { useAtomValue, useUpdateAtom } from 'jotai/utils'
 
-import { HeadingText } from 'modules/limitOrders/pure/RateInput/HeadingText'
-import { limitRateAtom, updateLimitRateAtom } from 'modules/limitOrders/state/limitRateAtom'
-import { useLimitOrdersDerivedState } from 'modules/limitOrders/hooks/useLimitOrdersDerivedState'
-import { toFraction } from 'modules/limitOrders/utils/toFraction'
-import { useRateImpact } from 'modules/limitOrders/hooks/useRateImpact'
-import { isFractionFalsy } from 'utils/isFractionFalsy'
-import { getQuoteCurrency, getQuoteCurrencyByStableCoin } from 'common/services/getQuoteCurrency'
-import { getAddress } from 'utils/getAddress'
-import { useUpdateActiveRate } from 'modules/limitOrders/hooks/useUpdateActiveRate'
-import { TokenSymbol } from 'common/pure/TokenSymbol'
-import { formatInputAmount } from 'utils/amountFormat'
-import QuestionHelper from 'legacy/components/QuestionHelper'
-import { ExecutionPriceTooltip } from 'modules/limitOrders/pure/ExecutionPriceTooltip'
+import { RefreshCw } from 'react-feather'
+
 import Loader from 'legacy/components/Loader'
+import QuestionHelper from 'legacy/components/QuestionHelper'
+
+import { useLimitOrdersDerivedState } from 'modules/limitOrders/hooks/useLimitOrdersDerivedState'
+import { useRateImpact } from 'modules/limitOrders/hooks/useRateImpact'
+import { useUpdateActiveRate } from 'modules/limitOrders/hooks/useUpdateActiveRate'
+import { ExecutionPriceTooltip } from 'modules/limitOrders/pure/ExecutionPriceTooltip'
+import { HeadingText } from 'modules/limitOrders/pure/RateInput/HeadingText'
 import { executionPriceAtom } from 'modules/limitOrders/state/executionPriceAtom'
-import { ExecutionPrice } from 'modules/limitOrders/pure/ExecutionPrice'
-import { limitOrdersFeatures } from 'constants/featureFlags'
+import { limitRateAtom, updateLimitRateAtom } from 'modules/limitOrders/state/limitRateAtom'
+import { toFraction } from 'modules/limitOrders/utils/toFraction'
 import { useWalletInfo } from 'modules/wallet'
+
+import { ordersTableFeatures } from 'common/constants/featureFlags'
+import { ExecutionPrice } from 'common/pure/ExecutionPrice'
+import { TokenSymbol } from 'common/pure/TokenSymbol'
+import { getQuoteCurrency, getQuoteCurrencyByStableCoin } from 'common/services/getQuoteCurrency'
+import { formatInputAmount } from 'utils/amountFormat'
+import { getAddress } from 'utils/getAddress'
+import { isFractionFalsy } from 'utils/isFractionFalsy'
+
+import * as styledEl from './styled'
 
 export function RateInput() {
   const { chainId } = useWalletInfo()
@@ -37,7 +41,7 @@ export function RateInput() {
     initialRate,
   } = useAtomValue(limitRateAtom)
   const updateRate = useUpdateActiveRate()
-  const updateLimitRateState = useUpdateAtom(updateLimitRateAtom)
+  const updateLimitRateState = useSetAtom(updateLimitRateAtom)
   const executionPrice = useAtomValue(executionPriceAtom)
   const [isQuoteCurrencySet, setIsQuoteCurrencySet] = useState(false)
 
@@ -171,7 +175,7 @@ export function RateInput() {
         </styledEl.Body>
       </styledEl.Wrapper>
 
-      {limitOrdersFeatures.DISPLAY_EST_EXECUTION_PRICE && (
+      {ordersTableFeatures.DISPLAY_EST_EXECUTION_PRICE && (
         <styledEl.EstimatedRate>
           <b>
             Order executes at{' '}

@@ -1,16 +1,17 @@
-import BigNumberJs from 'bignumber.js'
+import { OrderKind } from '@cowprotocol/cow-sdk'
 import { Percent } from '@uniswap/sdk-core'
 
-import { getQuote } from 'api/gnosisProtocol'
-import { SWR_OPTIONS } from 'legacy/constants'
-
-import { OrderKind } from '@cowprotocol/cow-sdk'
-import { toErc20Address } from 'legacy/utils/tokens'
-import { LegacyFeeQuoteParams, LegacyPriceQuoteParams, LegacyQuoteParams } from 'api/gnosisProtocol/legacy/types'
-import { FeeInformation, PriceInformation } from 'types'
+import BigNumberJs from 'bignumber.js'
 import useSWR, { SWRConfiguration } from 'swr'
+import { FeeInformation, PriceInformation } from 'types'
+
+import { SWR_OPTIONS } from 'legacy/constants'
 import { getUsdQuoteValidTo } from 'legacy/hooks/useStablecoinPrice'
 import { GpPriceStrategy } from 'legacy/state/gas/atoms'
+import { toErc20Address } from 'legacy/utils/tokens'
+
+import { getQuote } from 'api/gnosisProtocol'
+import { LegacyFeeQuoteParams, LegacyPriceQuoteParams, LegacyQuoteParams } from 'api/gnosisProtocol/legacy/types'
 
 export type QuoteResult = [PromiseSettledResult<PriceInformation>, PromiseSettledResult<FeeInformation>]
 
@@ -52,7 +53,13 @@ export async function getBestQuote({
         '] - trying back up price sources...'
       )
       // ATTEMPT LEGACY CALL
-      return getBestQuote({ strategy: 'LEGACY', quoteParams, fetchFee, previousFee, isPriceRefresh: false })
+      return getBestQuote({
+        strategy: 'LEGACY',
+        quoteParams,
+        fetchFee,
+        previousFee,
+        isPriceRefresh: false,
+      })
     })
   } else {
     console.debug('[GP PRICE::API] getBestQuote - Attempting best quote retrieval using LEGACY strategy, hang tight.')
@@ -77,6 +84,7 @@ export function getValidParams(params: LegacyPriceQuoteParams) {
   return { ...params, baseToken, quoteToken }
 }
 
+// TODO: the function throws error, when initialValue = '0'
 export function calculateFallbackPriceImpact(initialValue: string, finalValue: string) {
   const initialValueBn = new BigNumberJs(initialValue)
   const finalValueBn = new BigNumberJs(finalValue)

@@ -1,6 +1,8 @@
 import { Contract } from '@ethersproject/contracts'
 import { parseUnits, parseEther } from '@ethersproject/units'
-import Erc20 from 'legacy/abis/erc20.json'
+
+// import Erc20 from 'legacy/abis/erc20.json'
+import Erc20 from 'libs/abis/src/abis-legacy/erc20.json'
 
 async function sendAmount(provider: any, contractAddress: string, toAddress: string, amount: any, sendEther?: boolean) {
   if (!provider) return

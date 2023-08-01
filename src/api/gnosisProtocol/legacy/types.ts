@@ -1,6 +1,8 @@
-import { SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
-import { FeeInformation, PriceInformation } from 'types'
+import { SupportedChainId as ChainId, PriceQuality } from '@cowprotocol/cow-sdk'
 import { EnrichedOrder } from '@cowprotocol/cow-sdk'
+
+import { FeeInformation, PriceInformation } from 'types'
+
 import { GpPriceStrategy } from 'legacy/state/gas/atoms'
 
 type FeeQuoteParams = Pick<EnrichedOrder, 'sellToken' | 'buyToken' | 'kind'> & {
@@ -33,7 +35,7 @@ export type LegacyFeeQuoteParams = FeeQuoteParams & {
   fromDecimals: number
   toDecimals: number
   chainId: ChainId
-  priceQuality?: string
+  priceQuality: PriceQuality
   isBestQuote?: boolean
   isEthFlow: boolean
 }

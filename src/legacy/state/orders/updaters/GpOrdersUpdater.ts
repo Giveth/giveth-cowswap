@@ -1,19 +1,22 @@
+import { useSetAtom } from 'jotai'
 import { useCallback, useEffect, useMemo, useRef } from 'react'
 
+import { EnrichedOrder, EthflowData, OrderClass, SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
 import { getAddress } from '@ethersproject/address'
 import { Token } from '@uniswap/sdk-core'
 
-import { useAddOrUpdateOrders } from 'legacy/state/orders/hooks'
+import { NATIVE_CURRENCY_BUY_ADDRESS, NATIVE_CURRENCY_BUY_TOKEN } from 'legacy/constants'
 import { useAllTokens } from 'legacy/hooks/Tokens'
-import { Order, OrderStatus } from 'legacy/state/orders/actions'
-import { GP_ORDER_UPDATE_INTERVAL, NATIVE_CURRENCY_BUY_ADDRESS, NATIVE_CURRENCY_BUY_TOKEN } from 'legacy/constants'
-import { classifyOrder, OrderTransitionStatus } from 'legacy/state/orders/utils'
-import { computeOrderSummary } from 'legacy/state/orders/updaters/utils'
 import { useTokenLazy } from 'legacy/hooks/useTokenLazy'
-import { useGpOrders } from 'api/gnosisProtocol/hooks'
-import { supportedChainId } from 'legacy/utils/supportedChainId'
-import { EnrichedOrder, EthflowData, OrderClass, SupportedChainId as ChainId } from '@cowprotocol/cow-sdk'
+import { Order, OrderStatus } from 'legacy/state/orders/actions'
+import { useAddOrUpdateOrders, useClearOrdersStorage } from 'legacy/state/orders/hooks'
+import { computeOrderSummary } from 'legacy/state/orders/updaters/utils'
+import { classifyOrder, OrderTransitionStatus } from 'legacy/state/orders/utils'
+
+import { apiOrdersAtom } from 'modules/orders/state/apiOrdersAtom'
 import { useWalletInfo } from 'modules/wallet'
+
+import { useGpOrders } from 'api/gnosisProtocol/hooks'
 
 function _getTokenFromMapping(
   address: string,
@@ -180,13 +183,15 @@ function _filterOrders(orders: EnrichedOrder[], tokens: Record<string, Token | n
  * - Persist the new tokens and orders on redux
  */
 export function GpOrdersUpdater(): null {
-  const { account, chainId: _chainId } = useWalletInfo()
-  const chainId = supportedChainId(_chainId)
+  const clearOrderStorage = useClearOrdersStorage()
+
+  const { account, chainId } = useWalletInfo()
   const allTokens = useAllTokens()
   const tokensAreLoaded = useMemo(() => Object.keys(allTokens).length > 0, [allTokens])
   const addOrUpdateOrders = useAddOrUpdateOrders()
   const getToken = useTokenLazy()
-  const gpOrders = useGpOrders(account, GP_ORDER_UPDATE_INTERVAL)
+  const updateApiOrders = useSetAtom(apiOrdersAtom)
+  const gpOrders = useGpOrders()
 
   // Using a ref to store allTokens to avoid re-fetching when new tokens are added
   // but still use the latest whenever the callback is invoked
@@ -236,10 +241,22 @@ export function GpOrdersUpdater(): null {
   )
 
   useEffect(() => {
+    updateApiOrders(gpOrders)
+  }, [gpOrders, updateApiOrders])
+
+  useEffect(() => {
     if (account && chainId && tokensAreLoaded) {
       updateOrders(chainId, account)
     }
   }, [account, chainId, tokensAreLoaded, updateOrders])
+
+  useEffect(() => {
+    clearOrderStorage()
+
+    return function () {
+      clearOrderStorage()
+    }
+  }, [clearOrderStorage])
 
   return null
 }

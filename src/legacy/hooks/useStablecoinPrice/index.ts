@@ -1,26 +1,27 @@
-import { Currency, CurrencyAmount, Price, Token /*, TradeType*/ } from '@uniswap/sdk-core'
-import tryParseCurrencyAmount from 'lib/utils/tryParseCurrencyAmount'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { SupportedChainId } from '@cowprotocol/cow-sdk'
-import { USDC, USDC_MAINNET } from 'legacy/constants/tokens'
+import { OrderKind, SupportedChainId } from '@cowprotocol/cow-sdk'
+import { Currency, CurrencyAmount, Price, Token } from '@uniswap/sdk-core'
 
-import { supportedChainId } from 'legacy/utils/supportedChainId'
-import { stringToCurrency } from 'legacy/state/swap/extension'
-import { OrderKind } from '@cowprotocol/cow-sdk'
 import { unstable_batchedUpdates as batchedUpdate } from 'react-dom'
-import { useGetCoingeckoUsdPrice } from 'api/coingecko'
-import { DEFAULT_NETWORK_FOR_LISTS } from 'legacy/constants/lists'
-import useBlockNumber from 'lib/hooks/useBlockNumber'
-import { useGetGpUsdcPrice } from 'legacy/utils/price'
-import { useWalletInfo } from 'modules/wallet'
+import { Nullish } from 'types'
+
+import { USDC } from 'legacy/constants/tokens'
 import { useGetGpPriceStrategy } from 'legacy/hooks/useGetGpPriceStrategy'
+import { stringToCurrency } from 'legacy/state/swap/extension'
+import { useGetGpUsdcPrice } from 'legacy/utils/price'
+
 import { useIsWrapOrUnwrap } from 'modules/trade/hooks/useIsWrapOrUnwrap'
+import { useWalletInfo } from 'modules/wallet'
+
+import { useGetCoingeckoUsdPrice } from 'api/coingecko'
+import { getPriceQuality } from 'api/gnosisProtocol/api'
+import useBlockNumber from 'lib/hooks/useBlockNumber'
+import tryParseCurrencyAmount from 'lib/utils/tryParseCurrencyAmount'
 
 export const getUsdQuoteValidTo = () => Math.ceil(Date.now() / 1000) + 600
 
 const STABLECOIN_AMOUNT_OUT: { [chain in SupportedChainId]: CurrencyAmount<Token> } = {
-  [SupportedChainId.MAINNET]: CurrencyAmount.fromRawAmount(USDC_MAINNET, 100_000e6),
   [SupportedChainId.MAINNET]: CurrencyAmount.fromRawAmount(USDC[SupportedChainId.MAINNET], 100e6),
   [SupportedChainId.GOERLI]: CurrencyAmount.fromRawAmount(USDC[SupportedChainId.GOERLI], 100e6),
   [SupportedChainId.GNOSIS_CHAIN]: CurrencyAmount.fromRawAmount(USDC[SupportedChainId.GNOSIS_CHAIN], 10_000e6),
@@ -34,15 +35,14 @@ export default function useCowUsdPrice(currency?: Currency) {
   const [bestUsdPrice, setBestUsdPrice] = useState<Price<Token, Currency> | null>(null)
   const [error, setError] = useState<Error | null>(null)
 
-  const chainId = currency?.chainId
+  const chainId = currency?.chainId as SupportedChainId
   const { account } = useWalletInfo()
   const strategy = useGetGpPriceStrategy()
 
   const sellTokenAddress = currency?.wrapped.address
   const sellTokenDecimals = currency?.wrapped.decimals
 
-  const supportedChain = supportedChainId(chainId)
-  const baseAmount = supportedChain ? STABLECOIN_AMOUNT_OUT[supportedChain] : undefined
+  const baseAmount = chainId ? STABLECOIN_AMOUNT_OUT[chainId] : undefined
   const stablecoin = baseAmount?.currency
   const baseAmountRaw = baseAmount?.quotient.toString()
 
@@ -50,7 +50,7 @@ export default function useCowUsdPrice(currency?: Currency) {
   // build quote params
   // null when no chain or base amount or if sell token = stablecoin
   const quoteParams = useMemo(() => {
-    if (!stablecoin || isStablecoin || !supportedChain || !sellTokenAddress || !sellTokenDecimals || !baseAmountRaw)
+    if (!stablecoin || isStablecoin || !chainId || !sellTokenAddress || !sellTokenDecimals || !baseAmountRaw)
       return null
 
     return {
@@ -58,14 +58,15 @@ export default function useCowUsdPrice(currency?: Currency) {
       sellToken: sellTokenAddress,
       kind: OrderKind.BUY,
       amount: baseAmountRaw,
-      chainId: supportedChain,
+      chainId,
       fromDecimals: sellTokenDecimals,
       toDecimals: stablecoin.decimals,
       userAddress: account,
       validTo: getUsdQuoteValidTo(),
       isEthFlow: false,
+      priceQuality: getPriceQuality({ verifyQuote: false }), // No need to verify the quote, estimation is good enough for COW USD estimate
     }
-  }, [account, baseAmountRaw, isStablecoin, sellTokenAddress, sellTokenDecimals, stablecoin, supportedChain])
+  }, [account, baseAmountRaw, isStablecoin, sellTokenAddress, sellTokenDecimals, stablecoin, chainId])
 
   // get SWR cached usd price
   const { data: quote, error: errorResponse } = useGetGpUsdcPrice({
@@ -119,7 +120,7 @@ export default function useCowUsdPrice(currency?: Currency) {
 }
 
 interface GetPriceQuoteParams {
-  currencyAmount?: CurrencyAmount<Currency>
+  currencyAmount: Nullish<CurrencyAmount<Currency>>
   error: Error | null
   price: Price<Token, Currency> | null
 }
@@ -141,7 +142,7 @@ function useGetPriceQuote({ price, error, currencyAmount }: GetPriceQuoteParams)
  * Returns the price in USDC of the input currency from price APIs
  * @param currencyAmount currency to compute the USDC price of
  */
-export function useUSDCValue(currencyAmount?: CurrencyAmount<Currency>) {
+export function useUSDCValue(currencyAmount: Nullish<CurrencyAmount<Currency>>) {
   const usdcPrice = useCowUsdPrice(currencyAmount?.currency)
 
   return useGetPriceQuote({ ...usdcPrice, currencyAmount })
@@ -149,7 +150,7 @@ export function useUSDCValue(currencyAmount?: CurrencyAmount<Currency>) {
 
 export function useCoingeckoUsdPrice(currency?: Currency) {
   // default to MAINNET (if disconnected e.g)
-  const { chainId = DEFAULT_NETWORK_FOR_LISTS } = useWalletInfo()
+  const { chainId } = useWalletInfo()
   const blockNumber = useBlockNumber()
   const [price, setPrice] = useState<Price<Token, Currency> | null>(null)
   const [error, setError] = useState<Error | null>(null)
@@ -163,10 +164,9 @@ export function useCoingeckoUsdPrice(currency?: Currency) {
   // use wrapped address equivalent if native (DONT USE "ETH" or "XDAI")
   const tokenAddress = currency?.wrapped.address
 
-  const chainIdSupported = supportedChainId(chainId)
   // get SWR cached coingecko usd price
   const { data: priceResponse, error: errorResponse } = useGetCoingeckoUsdPrice({
-    chainId: chainIdSupported,
+    chainId,
     tokenAddress,
     isNative,
   })
@@ -175,7 +175,7 @@ export function useCoingeckoUsdPrice(currency?: Currency) {
     // build baseAmount here as to not mess with deps array
     const baseAmount = tryParseCurrencyAmount('1', currencyRef.current)
 
-    if (!chainIdSupported || !priceResponse || !baseAmount) return
+    if (!priceResponse || !baseAmount) return
 
     try {
       if (errorResponse) throw errorResponse
@@ -189,7 +189,7 @@ export function useCoingeckoUsdPrice(currency?: Currency) {
       // we need to parse all USD returned amounts
       // and convert to the same currencyRef.current for both sides (SDK math invariant)
       // in our case we stick to the USDC paradigm
-      const quoteAmount = tryParseCurrencyAmount(apiUsdPrice.toString(), USDC[chainIdSupported])
+      const quoteAmount = tryParseCurrencyAmount(apiUsdPrice.toString(), USDC[chainId])
       // parse failure is unlikely - type safe
       if (!quoteAmount) return
       // create a new Price object
@@ -220,18 +220,18 @@ export function useCoingeckoUsdPrice(currency?: Currency) {
       })
     }
     // don't depend on Currency (deep nested object)
-  }, [chainId, blockNumber, tokenAddress, chainIdSupported, priceResponse, errorResponse, isNative])
+  }, [chainId, blockNumber, tokenAddress, priceResponse, errorResponse, isNative])
 
   return { price, error }
 }
 
-export function useCoingeckoUsdValue(currencyAmount: CurrencyAmount<Currency> | undefined) {
+export function useCoingeckoUsdValue(currencyAmount: Nullish<CurrencyAmount<Currency>>) {
   const coingeckoUsdPrice = useCoingeckoUsdPrice(currencyAmount?.currency)
 
   return useGetPriceQuote({ ...coingeckoUsdPrice, currencyAmount })
 }
 
-export function useHigherUSDValue(currencyAmount: CurrencyAmount<Currency> | undefined) {
+export function useHigherUSDValue(currencyAmount: Nullish<CurrencyAmount<Currency>>) {
   const isWrapOrUnwrap = useIsWrapOrUnwrap()
   const checkedCurrencyAmount = isWrapOrUnwrap ? undefined : currencyAmount
   // if iswrap or unwrap use undefined values to not run expensive calculation

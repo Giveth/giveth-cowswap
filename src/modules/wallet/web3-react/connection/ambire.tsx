@@ -1,14 +1,17 @@
-import { ConnectionType } from 'modules/wallet'
 import { useIsActiveWallet } from 'legacy/hooks/useIsActiveWallet'
-import { walletConnectConnection } from './walletConnect'
 
-import { getConnectionName, getIsAmbireWallet } from 'modules/wallet/api/utils/connection'
+import { ConnectionType, useWalletMetaData } from 'modules/wallet'
+import { default as AmbireImage } from 'modules/wallet/api/assets/ambire.svg'
 import { ConnectWalletOption } from 'modules/wallet/api/pure/ConnectWalletOption'
+import { getConnectionName, getIsAmbireWallet } from 'modules/wallet/api/utils/connection'
 import { WC_DISABLED_TEXT } from 'modules/wallet/constants'
-import { useWalletMetaData } from 'modules/wallet'
+
+import { useFeatureFlags } from 'common/hooks/featureFlags/useFeatureFlags'
+
 import { TryActivation } from '.'
 
-import { default as AmbireImage } from 'modules/wallet/api/assets/ambire.svg'
+import { walletConnectConnection } from './walletConnect'
+import { walletConnectConnectionV2 } from './walletConnectV2'
 
 const ambireOption = {
   color: '#4196FC',
@@ -18,8 +21,11 @@ const ambireOption = {
 
 export function AmbireOption({ tryActivation }: { tryActivation: TryActivation }) {
   const { walletName } = useWalletMetaData()
+  const { walletConnectV1Enabled } = useFeatureFlags()
 
-  const isWalletConnect = useIsActiveWallet(walletConnectConnection)
+  const connection = walletConnectV1Enabled ? walletConnectConnection : walletConnectConnectionV2
+
+  const isWalletConnect = useIsActiveWallet(connection)
   const isActive = isWalletConnect && getIsAmbireWallet(walletName)
   const tooltipText = !isActive && isWalletConnect ? WC_DISABLED_TEXT : null
 
@@ -29,7 +35,7 @@ export function AmbireOption({ tryActivation }: { tryActivation: TryActivation }
       isActive={isActive}
       tooltipText={tooltipText}
       clickable={!isWalletConnect}
-      onClick={() => tryActivation(walletConnectConnection.connector)}
+      onClick={() => tryActivation(connection.connector)}
       header={getConnectionName(ConnectionType.AMBIRE)}
     />
   )

@@ -1,18 +1,21 @@
+import { transparentize } from 'polished'
 import styled from 'styled-components/macro'
-import { CopyIcon, TransactionStatusText } from 'legacy/components/Copy'
-import { StyledLink } from 'legacy/theme'
+
+import { ButtonSecondary } from 'legacy/components/Button'
 import { YellowCard } from 'legacy/components/Card'
+import { CopyIcon, TransactionStatusText } from 'legacy/components/Copy'
+import { QuestionWrapper } from 'legacy/components/QuestionHelper'
+import { ExternalLink, StyledLink } from 'legacy/theme'
+
 import {
   StatusLabelWrapper,
   Summary,
-  TransactionWrapper,
-  TransactionStatusText as ActivityDetailsText,
   SummaryInner,
-  TransactionInnerDetail,
   TextAlert,
+  TransactionInnerDetail,
+  TransactionStatusText as ActivityDetailsText,
+  TransactionWrapper,
 } from '../../containers/Transaction/styled'
-import { ButtonSecondary } from 'legacy/components/Button'
-import { ExternalLink } from 'legacy/theme'
 
 export const WalletName = styled.div`
   width: initial;
@@ -34,6 +37,8 @@ export const IconWrapper = styled.div<{ size?: number }>`
   ${({ theme }) => theme.mediaWidth.upToMedium`
     align-items: flex-end;
   `};
+  border-radius: ${({ size }) => (size ? size + 'px' : '32px')};
+  overflow: hidden;
 `
 
 export const TransactionListWrapper = styled.div`
@@ -91,6 +96,13 @@ export const AccountControl = styled.div`
   }
 `
 
+export const UnsupportedWalletBox = styled.div`
+  width: 100%;
+  text-align: center;
+  font-size: 14px;
+  margin-top: 60px;
+`
+
 export const WalletSecondaryActions = styled.div``
 
 export const WalletNameAddress = styled.div`
@@ -101,15 +113,16 @@ export const WalletNameAddress = styled.div`
 `
 
 export const Wrapper = styled.div`
-  display: flex;
-  flex-flow: row wrap;
+  display: block;
   width: 100%;
   color: ${({ theme }) => theme.text1};
   padding: 0;
   height: 100%;
+  margin: 0 24px;
 
   ${({ theme }) => theme.mediaWidth.upToMedium`
     padding: 12px 0 0;
+    margin: 0 16px;
   `};
 
   ${WalletName},
@@ -238,17 +251,24 @@ export const UpperSection = styled.div`
 
 export const InfoCard = styled.div`
   width: 100%;
+  height: fit-content;
   display: flex;
   flex-flow: row wrap;
   justify-content: space-between;
-  margin: 0 24px 24px;
   border-radius: 16px;
   padding: 24px;
   background: ${({ theme }) => theme.grey1};
 
+  &:not(:first-child) {
+    margin: 24px 0;
+  }
+
   ${({ theme }) => theme.mediaWidth.upToSmall`
     padding: 16px 10px 24px;
-    margin: 0 16px 16px;
+
+    &:not(:first-child) {
+      margin: 16px 0;
+    }
   `};
 `
 
@@ -297,11 +317,6 @@ export const LowerSection = styled.div`
   width: 100%;
   align-items: flex-start;
   justify-content: flex-start;
-  padding: 0 24px;
-
-  ${({ theme }) => theme.mediaWidth.upToSmall`
-    padding: 0 16px;
-  `};
 
   > span {
     display: flex;
@@ -436,4 +451,109 @@ export const NetworkCard = styled(NetworkCardUni)`
   ${({ theme }) => theme.mediaWidth.upToSmall`
     margin: 0 auto 12px;
   `};
+`
+
+export const SurplusCardWrapper = styled.div`
+  margin: 0 auto 24px;
+  width: 100%;
+  display: grid;
+  align-items: center;
+  justify-content: center;
+  grid-template-columns: 1fr;
+  gap: 24px;
+  box-sizing: border-box;
+  padding: 0 24px;
+
+  ${({ theme }) => theme.mediaWidth.upToSmall`
+      display: flex;
+      flex-flow: column wrap;
+      padding: 0 16px;
+    `}
+
+  ${InfoCard} {
+    display: flex;
+    flex-flow: column wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0;
+    background: ${({ theme }) => theme.gradient2};
+    border-radius: 16px;
+    padding: 20px 26px 26px;
+    min-height: 210px;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+  }
+
+  ${InfoCard} > div {
+    display: flex;
+    flex-flow: column wrap;
+    align-items: center;
+    justify-content: center;
+
+    &:first-child {
+      margin: 20px auto 0;
+    }
+
+    &:last-child {
+      margin: auto 0 0;
+    }
+  }
+
+  ${InfoCard} > div > span {
+    display: flex;
+    flex-flow: column wrap;
+    align-items: center;
+    justify-content: center;
+  }
+
+  ${InfoCard} > div > span > i,
+    ${InfoCard} > div > a,
+    ${InfoCard} > div > span > p {
+    display: flex;
+    font-size: 13px;
+    font-style: normal;
+    font-weight: 500;
+    line-height: 1.1;
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+    color: ${({ theme }) => transparentize(0.3, theme.text1)};
+  }
+
+  ${InfoCard} > div > span > p {
+    color: ${({ theme }) => theme.text1};
+  }
+
+  ${InfoCard} > div > span > b {
+    font-size: 28px;
+    font-weight: bold;
+    color: ${({ theme }) => theme.success};
+    width: 100%;
+    text-align: center;
+    margin: 20px auto 0;
+    word-break: break-all;
+  }
+
+  ${InfoCard} > div > a {
+    margin: 20px auto 0;
+  }
+
+  ${InfoCard} > div > small {
+    font-size: 15px;
+    font-weight: 500;
+    line-height: 1.1;
+    color: ${({ theme }) => transparentize(0.5, theme.text1)};
+    margin: 3px auto 0;
+  }
+
+  ${QuestionWrapper} {
+    opacity: 0.5;
+    transition: opacity 0.2s ease-in-out;
+
+    &:hover {
+      opacity: 1;
+    }
+  }
 `

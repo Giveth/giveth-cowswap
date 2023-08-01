@@ -1,30 +1,35 @@
-import { ButtonConfirmed } from 'legacy/components/Button'
-import { AutoRow } from 'legacy/components/Row'
-import CurrencyLogo from 'legacy/components/CurrencyLogo'
-import { Trans } from '@lingui/macro'
-import Loader from 'legacy/components/Loader'
-import { CheckCircle, HelpCircle } from 'react-feather'
-import { MouseoverTooltip } from 'legacy/components/Tooltip'
-import { ButtonSize } from 'legacy/theme/enum'
 import { useContext, useMemo } from 'react'
+
 import { Currency } from '@uniswap/sdk-core'
+
+import { Trans } from '@lingui/macro'
+import { CheckCircle, HelpCircle } from 'react-feather'
 import { ThemeContext } from 'styled-components/macro'
+
+import { ButtonConfirmed } from 'legacy/components/Button'
+import Loader from 'legacy/components/Loader'
+import { AutoRow } from 'legacy/components/Row'
+import { MouseoverTooltip } from 'legacy/components/Tooltip'
 import { ApprovalState } from 'legacy/hooks/useApproveCallback'
+import { ButtonSize } from 'legacy/theme/enum'
+
+import { CurrencyLogo } from 'common/pure/CurrencyLogo'
 import { TokenSymbol } from 'common/pure/TokenSymbol'
 
 export interface ApproveButtonProps {
   currency: Currency | undefined | null
   state: ApprovalState
   onClick: () => void
+  isDisabled?: boolean
 }
 
 export function ApproveButton(props: ApproveButtonProps) {
-  const { currency, state, onClick } = props
+  const { currency, state, onClick, isDisabled } = props
 
   const theme = useContext(ThemeContext)
   const isPending = state === ApprovalState.PENDING
   const isConfirmed = state === ApprovalState.APPROVED
-  const disabled = state !== ApprovalState.NOT_APPROVED
+  const disabled = isDisabled || state !== ApprovalState.NOT_APPROVED
 
   const content = useMemo(() => {
     if (isConfirmed) {

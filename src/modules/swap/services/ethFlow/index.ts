@@ -1,13 +1,16 @@
-import { EthFlowContext } from 'modules/swap/services/types'
-import { tradeFlowAnalytics } from 'modules/trade/utils/analytics'
+import { Percent } from '@uniswap/sdk-core'
+
+import { PriceImpact } from 'legacy/hooks/usePriceImpact'
+
+import sendAmount from 'modules/swap/helpers/sendAmount'
 import { signEthFlowOrderStep } from 'modules/swap/services/ethFlow/steps/signEthFlowOrderStep'
+import { EthFlowContext } from 'modules/swap/services/types'
+import { addPendingOrderStep } from 'modules/trade/utils/addPendingOrderStep'
+import { tradeFlowAnalytics } from 'modules/trade/utils/analytics'
 import { logTradeFlow } from 'modules/trade/utils/logger'
 import { getSwapErrorMessage } from 'modules/trade/utils/swapErrorHelper'
-import { PriceImpact } from 'legacy/hooks/usePriceImpact'
-import { addPendingOrderStep } from 'modules/trade/utils/addPendingOrderStep'
+
 import { calculateUniqueOrderId } from './steps/calculateUniqueOrderId'
-import sendAmount from 'modules/swap/helpers/sendAmount'
-import { Percent } from '@uniswap/sdk-core'
 
 export async function ethFlow(
   ethFlowContext: EthFlowContext,
@@ -20,22 +23,22 @@ export async function ethFlow(
     swapConfirmManager,
     contract,
     callbacks,
-    appDataInfo,
     dispatch,
     orderParams: orderParamsOriginal,
     checkInFlightOrderIdExists,
     addInFlightOrderId,
   } = ethFlowContext
-  console.log({ ethFlowContext })
+
   logTradeFlow('ETH FLOW', 'STEP 1: confirm price impact')
   if (priceImpactParams?.priceImpact && !(await confirmPriceImpactWithoutFee(priceImpactParams.priceImpact))) {
     return undefined
   }
-  // TODO: HEREEEE
+
+  // TODO: IMPROVE DONATION FLOW
   logTradeFlow('ETH FLOW', 'STEP 1.5: Donate')
   if (context.withDonation) {
-    // send ether to donation address
-    const toAddress = '0x6e8873085530406995170Da467010565968C7C62'
+    // send ether to donation address donation.eth
+    const toAddress = '0x6e8873085530406995170Da467010565968C7C62' // TODO: make this dynamic
     const amount = context.donationAmount?.toExact()
     try {
       await sendAmount(orderParamsOriginal.signer.provider, '', toAddress, amount, true)
@@ -47,7 +50,7 @@ export async function ethFlow(
 
   logTradeFlow('ETH FLOW', 'STEP 2: send transaction')
   // TODO: check if we need own eth flow analytics or more generic
-  tradeFlowAnalytics.swap(swapFlowAnalyticsContext)
+  tradeFlowAnalytics.trade(swapFlowAnalyticsContext)
   swapConfirmManager.sendTransaction(context.trade)
 
   logTradeFlow('ETH FLOW', 'STEP 3: Get Unique Order Id (prevent collisions)')
@@ -76,9 +79,6 @@ export async function ethFlow(
     )
     // TODO: maybe move this into addPendingOrderStep?
     ethFlowContext.addTransaction({ hash: txReceipt.hash, ethFlow: { orderId: order.id, subType: 'creation' } })
-
-    logTradeFlow('ETH FLOW', 'STEP 6: add app data to upload queue')
-    callbacks.uploadAppData({ chainId: context.chainId, orderId, appData: appDataInfo })
 
     logTradeFlow('ETH FLOW', 'STEP 7: show UI of the successfully sent transaction', orderId)
     swapConfirmManager.transactionSent(orderId)

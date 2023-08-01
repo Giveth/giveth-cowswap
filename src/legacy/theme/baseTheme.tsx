@@ -1,12 +1,13 @@
-import { Colors } from 'legacy/theme/styled'
-import { ButtonSize } from 'legacy/theme/enum'
-import { createGlobalStyle, css } from 'styled-components/macro'
 import { transparentize, lighten } from 'polished'
-import { colorsUniswap } from 'legacy/theme/colorsUniswap'
+import { createGlobalStyle, css } from 'styled-components/macro'
+
 import Cursor1 from 'legacy/assets/cow-swap/cursor1.gif'
 import Cursor2 from 'legacy/assets/cow-swap/cursor2.gif'
 import Cursor3 from 'legacy/assets/cow-swap/cursor3.gif'
 import Cursor4 from 'legacy/assets/cow-swap/cursor4.gif'
+import { colorsUniswap } from 'legacy/theme/colorsUniswap'
+import { ButtonSize } from 'legacy/theme/enum'
+import { Colors } from 'legacy/theme/styled'
 
 // TODO: This shouldn't be in the base theme
 // Modal override items
@@ -168,6 +169,10 @@ export function themeVariables(darkMode: boolean, colorsTheme: Colors) {
     boxShadow2: '0 4px 12px 0 rgb(0 0 0 / 15%)',
     boxShadow3: `0 4px 12px 0 ${transparentize(0.9, colorsTheme.text3)}`,
     gradient1: `linear-gradient(145deg, ${colorsTheme.bg1}, ${colorsTheme.grey1})`,
+    gradient2: `linear-gradient(250deg, ${transparentize(0.92, colorsTheme.alert)} 10%, ${transparentize(
+      0.92,
+      colorsTheme.success
+    )} 50%, ${transparentize(0.92, colorsTheme.success)} 100%);`,
     input: {
       bg1: darkMode ? '#07162D' : '#ECF1F8',
     },

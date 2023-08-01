@@ -1,16 +1,14 @@
 import { Token } from '@uniswap/sdk-core'
-import { WrapType } from 'legacy/hooks/useWrapCallback'
-import { QuoteError } from 'legacy/state/price/actions'
+
 import { ApprovalState } from 'legacy/hooks/useApproveCallback'
+import { QuoteError } from 'legacy/state/price/actions'
 import TradeGp from 'legacy/state/swap/TradeGp'
+
 import { getEthFlowEnabled } from 'modules/swap/helpers/getEthFlowEnabled'
 
 export enum SwapButtonState {
   SwapIsUnsupported = 'SwapIsUnsupported',
   WalletIsUnsupported = 'WalletIsUnsupported',
-  WrapError = 'WrapError',
-  ShouldWrapNativeToken = 'ShouldWrapNativeToken',
-  ShouldUnwrapNativeToken = 'ShouldUnwrapNativeToken',
   FeesExceedFromAmount = 'FeesExceedFromAmount',
   InsufficientLiquidity = 'InsufficientLiquidity',
   ZeroPrice = 'ZeroPrice',
@@ -31,6 +29,9 @@ export enum SwapButtonState {
   ExpertModeEthFlowSwap = 'ExpertModeEthFlowSwap',
   ApproveAndSwap = 'ApproveAndSwap',
   ExpertApproveAndSwap = 'ExpertApproveAndSwap',
+
+  WrapAndSwap = 'WrapAndSwap',
+  ExpertWrapAndSwap = 'ExpertWrapAndSwap',
 }
 
 export interface SwapButtonStateParams {
@@ -40,8 +41,7 @@ export interface SwapButtonStateParams {
   isExpertMode: boolean
   isSwapUnsupported: boolean
   isTxBundlingEnabled: boolean
-  wrapType: WrapType
-  wrapInputError: string | undefined
+  isEthFlowBundlingEnabled: boolean
   quoteError: QuoteError | undefined | null
   inputError?: string
   approvalState: ApprovalState
@@ -67,7 +67,7 @@ const quoteErrorToSwapButtonState: { [key in QuoteError]: SwapButtonState | null
 }
 
 export function getSwapButtonState(input: SwapButtonStateParams): SwapButtonState {
-  const { wrapType, quoteError, approvalState } = input
+  const { quoteError, approvalState } = input
 
   // show approve flow when: no error on inputs, not approved or pending, or approved in current session
   // never show if price impact is above threshold in non expert mode
@@ -77,7 +77,7 @@ export function getSwapButtonState(input: SwapButtonStateParams): SwapButtonStat
   const isValid = !input.inputError && input.feeWarningAccepted && input.impactWarningAccepted
   const swapBlankState = !input.inputError && !input.trade
 
-  if (quoteError && ![WrapType.WRAP, WrapType.UNWRAP].includes(wrapType)) {
+  if (quoteError) {
     const quoteErrorState = quoteErrorToSwapButtonState[quoteError]
 
     if (quoteErrorState) return quoteErrorState
@@ -93,18 +93,6 @@ export function getSwapButtonState(input: SwapButtonStateParams): SwapButtonStat
 
   if (!input.isSupportedWallet) {
     return SwapButtonState.WalletIsUnsupported
-  }
-
-  if (wrapType !== WrapType.NOT_APPLICABLE && input.wrapInputError) {
-    return SwapButtonState.WrapError
-  }
-
-  if (wrapType === WrapType.WRAP) {
-    return SwapButtonState.ShouldWrapNativeToken
-  }
-
-  if (wrapType === WrapType.UNWRAP) {
-    return SwapButtonState.ShouldUnwrapNativeToken
   }
 
   if (swapBlankState || input.isGettingNewQuote || input.isBestQuoteLoading) {
@@ -137,6 +125,8 @@ export function getSwapButtonState(input: SwapButtonStateParams): SwapButtonStat
   if (input.isNativeIn) {
     if (getEthFlowEnabled(input.isSmartContractWallet)) {
       return input.isExpertMode ? SwapButtonState.ExpertModeEthFlowSwap : SwapButtonState.RegularEthFlowSwap
+    } else if (input.isEthFlowBundlingEnabled) {
+      return input.isExpertMode ? SwapButtonState.ExpertWrapAndSwap : SwapButtonState.WrapAndSwap
     } else {
       return SwapButtonState.SwapWithWrappedToken
     }

@@ -1,34 +1,36 @@
 import '@reach/dialog/styles.css'
 import 'inter-ui'
 
-import 'components/analytics'
+import 'legacy/components/analytics'
 import 'utils/sentry'
 
-import { BlockNumberProvider } from 'lib/hooks/useBlockNumber'
+import { Provider as AtomProvider } from 'jotai'
 import { StrictMode } from 'react'
+
+import { LanguageProvider } from 'i18n'
+import { createRoot } from 'react-dom/client'
 import { Provider } from 'react-redux'
 import { HashRouter } from 'react-router-dom'
-
-import Blocklist from 'legacy/components/Blocklist'
-import Web3Provider from 'legacy/components/Web3Provider'
-import { LanguageProvider } from 'i18n'
-import { App } from 'modules/application/containers/App'
 import * as serviceWorkerRegistration from 'serviceWorkerRegistration'
+
+import AppziButton from 'legacy/components/AppziButton'
+import { Popups } from 'legacy/components/Popups'
+import Web3Provider from 'legacy/components/Web3Provider'
 import store from 'legacy/state'
 import ThemeProvider, { FixedGlobalStyle, ThemedGlobalStyle } from 'legacy/theme'
-
-// import { EventUpdater } from 'legacy/state/orders/mocks'
-import AppziButton from 'legacy/components/AppziButton'
 import { nodeRemoveChildFix } from 'legacy/utils/node'
-import { Provider as AtomProvider } from 'jotai'
 
-import Popups from 'legacy/components/Popups'
+import { App } from 'modules/application/containers/App'
 import { Updaters } from 'modules/application/containers/App/Updaters'
-import { createRoot } from 'react-dom/client'
-import { FortuneWidget } from 'modules/fortune/containers/FortuneWidget'
-import { FeatureGuard } from 'common/containers/FeatureGuard'
 import { WithLDProvider } from 'modules/application/containers/WithLDProvider'
+import { FortuneWidget } from 'modules/fortune/containers/FortuneWidget'
 import { DonationProvider } from 'modules/swap/hooks/useDonation'
+
+import { FeatureGuard } from 'common/containers/FeatureGuard'
+import { BlockNumberProvider } from 'lib/hooks/useBlockNumber'
+
+import { WalletUnsupportedNetworkBanner } from '../common/containers/WalletUnsupportedNetworkBanner'
+import { jotaiStore } from '../jotaiStore'
 
 // Node removeChild hackaround
 // based on: https://github.com/facebook/react/issues/11538#issuecomment-417504600
@@ -44,28 +46,27 @@ root.render(
   <StrictMode>
     <FixedGlobalStyle />
     <Provider store={store}>
-      <AtomProvider>
+      <AtomProvider store={jotaiStore}>
         <HashRouter>
           <LanguageProvider>
             <Web3Provider>
-              <Blocklist>
-                <BlockNumberProvider>
-                  <WithLDProvider>
-                    <DonationProvider>
+              <DonationProvider>
+                <ThemeProvider>
+                  <ThemedGlobalStyle />
+                  <WalletUnsupportedNetworkBanner />
+                  <BlockNumberProvider>
+                    <WithLDProvider>
                       <Updaters />
-                      <ThemeProvider>
-                        <ThemedGlobalStyle />
-                        <FeatureGuard featureFlag="cowFortuneEnabled">
-                          <FortuneWidget />
-                        </FeatureGuard>
-                        <Popups />
-                        <AppziButton />
-                        <App />
-                      </ThemeProvider>
-                    </DonationProvider>
-                  </WithLDProvider>
-                </BlockNumberProvider>
-              </Blocklist>
+                      <FeatureGuard featureFlag="cowFortuneEnabled">
+                        <FortuneWidget />
+                      </FeatureGuard>
+                      <Popups />
+                      <AppziButton />
+                      <App />
+                    </WithLDProvider>
+                  </BlockNumberProvider>
+                </ThemeProvider>
+              </DonationProvider>
             </Web3Provider>
           </LanguageProvider>
         </HashRouter>

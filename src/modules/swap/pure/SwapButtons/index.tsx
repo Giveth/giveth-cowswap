@@ -1,22 +1,28 @@
-import { SwapButtonState } from 'modules/swap/helpers/getSwapButtonState'
 import React, { ReactNode } from 'react'
-import { ButtonSize } from 'legacy/theme/enum'
-import { Trans } from '@lingui/macro'
-import { ButtonError, ButtonPrimary } from 'legacy/components/Button'
-import { Text } from 'rebass'
-import { Currency, CurrencyAmount, Token } from '@uniswap/sdk-core'
-import { AutoRow } from 'legacy/components/Row'
-import { GreyCard } from 'legacy/components/Card'
-import { GpEther } from 'legacy/constants/tokens'
+
 import { SupportedChainId } from '@cowprotocol/cow-sdk'
+import { Currency, CurrencyAmount, Token } from '@uniswap/sdk-core'
+
+import { Trans } from '@lingui/macro'
+import { Text } from 'rebass'
+
+import { ButtonError, ButtonPrimary } from 'legacy/components/Button'
+import { GreyCard } from 'legacy/components/Card'
 import { AutoColumn } from 'legacy/components/Column'
-import * as styledEl from './styled'
+import { AutoRow } from 'legacy/components/Row'
+import { GpEther } from 'legacy/constants/tokens'
 import { WrapUnwrapCallback } from 'legacy/hooks/useWrapCallback'
-import { EthFlowBanner } from 'modules/swap/containers/EthFlow/EthFlowBanner'
 import { Field } from 'legacy/state/swap/actions'
+import { ButtonSize } from 'legacy/theme/enum'
+
+import { EthFlowBanner } from 'modules/swap/containers/EthFlow/EthFlowBanner'
+import { SwapButtonState } from 'modules/swap/helpers/getSwapButtonState'
+
 import { TradeApproveButton } from 'common/containers/TradeApprove/TradeApproveButton'
-import { genericPropsChecker } from 'utils/genericPropsChecker'
 import { TokenSymbol } from 'common/pure/TokenSymbol'
+import { genericPropsChecker } from 'utils/genericPropsChecker'
+
+import * as styledEl from './styled'
 
 export type HandleSwapCallback = () => void
 
@@ -26,8 +32,6 @@ export interface SwapButtonsContext {
   wrappedToken: Token
   handleSwap: HandleSwapCallback
   inputAmount: CurrencyAmount<Currency> | undefined
-  wrapUnwrapAmount: CurrencyAmount<Currency> | undefined
-  wrapInputError: string | undefined
   onWrapOrUnwrap: WrapUnwrapCallback | null
   onEthFlow: () => void
   openSwapConfirm: () => void
@@ -49,21 +53,6 @@ const swapButtonStateMap: { [key in SwapButtonState]: (props: SwapButtonsContext
         <Trans>Wallet Unsupported</Trans>
       </Text>
     </ButtonError>
-  ),
-  [SwapButtonState.WrapError]: (props: SwapButtonsContext) => (
-    <ButtonPrimary disabled={true} buttonSize={ButtonSize.BIG}>
-      {props.wrapInputError}
-    </ButtonPrimary>
-  ),
-  [SwapButtonState.ShouldWrapNativeToken]: (props: SwapButtonsContext) => (
-    <ButtonPrimary onClick={() => props.onWrapOrUnwrap?.()} buttonSize={ButtonSize.BIG}>
-      <Trans>Wrap</Trans>
-    </ButtonPrimary>
-  ),
-  [SwapButtonState.ShouldUnwrapNativeToken]: (props: SwapButtonsContext) => (
-    <ButtonPrimary onClick={() => props.onWrapOrUnwrap?.()} buttonSize={ButtonSize.BIG}>
-      <Trans>Unwrap</Trans>
-    </ButtonPrimary>
   ),
   [SwapButtonState.SwapWithWrappedToken]: (props: SwapButtonsContext) => (
     <ButtonError buttonSize={ButtonSize.BIG} onClick={props.onEthFlow}>
@@ -174,6 +163,22 @@ const swapButtonStateMap: { [key in SwapButtonState]: (props: SwapButtonsContext
       <styledEl.SwapButtonBox>
         <Trans>
           Confirm (Approve&nbsp;{<TokenSymbol token={props.inputAmount?.currency.wrapped} length={6} />}&nbsp;and Swap)
+        </Trans>
+      </styledEl.SwapButtonBox>
+    </ButtonError>
+  ),
+  [SwapButtonState.WrapAndSwap]: (props: SwapButtonsContext) => (
+    <ButtonError buttonSize={ButtonSize.BIG} onClick={props.openSwapConfirm}>
+      <styledEl.SwapButtonBox>
+        <Trans>Wrap&nbsp;{<TokenSymbol token={props.inputAmount?.currency} length={6} />}&nbsp;and Swap</Trans>
+      </styledEl.SwapButtonBox>
+    </ButtonError>
+  ),
+  [SwapButtonState.ExpertWrapAndSwap]: (props: SwapButtonsContext) => (
+    <ButtonError buttonSize={ButtonSize.BIG} onClick={props.handleSwap}>
+      <styledEl.SwapButtonBox>
+        <Trans>
+          Confirm (Wrap&nbsp;{<TokenSymbol token={props.inputAmount?.currency} length={6} />}&nbsp;and Swap)
         </Trans>
       </styledEl.SwapButtonBox>
     </ButtonError>

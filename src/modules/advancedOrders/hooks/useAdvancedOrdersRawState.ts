@@ -1,10 +1,13 @@
-import { useAtomValue, useUpdateAtom } from 'jotai/utils'
-import { advancedOrdersAtom, AdvancedOrdersRawState, updateAdvancedOrdersAtom } from '../state/advancedOrdersAtom'
+import { useAtomValue, useSetAtom } from 'jotai'
 
-export function useAdvancedOrdersRawState(): AdvancedOrdersRawState {
+import { ExtendedTradeRawState } from 'modules/trade/types/TradeRawState'
+
+import { advancedOrdersAtom, updateAdvancedOrdersAtom } from '../state/advancedOrdersAtom'
+
+export function useAdvancedOrdersRawState(): ExtendedTradeRawState {
   return useAtomValue(advancedOrdersAtom)
 }
 
-export function useUpdateAdvancedOrdersRawState(): (update: Partial<AdvancedOrdersRawState>) => void {
-  return useUpdateAtom(updateAdvancedOrdersAtom)
+export function useUpdateAdvancedOrdersRawState(): (update: Partial<ExtendedTradeRawState>) => void {
+  return useSetAtom(updateAdvancedOrdersAtom)
 }

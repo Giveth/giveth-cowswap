@@ -1,17 +1,19 @@
+import { useMemo } from 'react'
+
 import { arrayify } from '@ethersproject/bytes'
 import { parseBytes32String } from '@ethersproject/strings'
 import { Currency, Token } from '@uniswap/sdk-core'
 import { useWeb3React } from '@web3-react/core'
-import { useBytes32TokenContract, useTokenContract } from 'legacy/hooks/useContract'
-import { NEVER_RELOAD, useSingleCallResult } from 'lib/hooks/multicall'
-import useNativeCurrency from 'lib/hooks/useNativeCurrency'
-import { useMemo } from 'react'
-import { isChainAllowed } from 'modules/wallet/web3-react/connection'
 
 import { TOKEN_SHORTHANDS } from 'legacy/constants/tokens'
+import { useBytes32TokenContract, useTokenContract } from 'legacy/hooks/useContract'
 import { isAddress } from 'legacy/utils'
-import { supportedChainId } from 'legacy/utils/supportedChainId'
+
 import { useWalletInfo } from 'modules/wallet'
+import { isChainAllowed } from 'modules/wallet/web3-react/connection'
+
+import { NEVER_RELOAD, useSingleCallResult } from 'lib/hooks/multicall'
+import useNativeCurrency from 'lib/hooks/useNativeCurrency'
 
 // parse a name or symbol from a token response
 const BYTES32_REGEX = /^0x[a-fA-F0-9]{64}$/
@@ -106,8 +108,7 @@ export function useCurrencyFromMap(tokens: TokenMap, currencyId?: string | null)
   const { chainId } = useWalletInfo()
   const isNative = Boolean(nativeCurrency && ['ETH', 'XDAI'].includes(currencyId?.toUpperCase() || '')) // MOD!!
   const shorthandMatchAddress = useMemo(() => {
-    const chain = supportedChainId(chainId)
-    return chain && currencyId ? TOKEN_SHORTHANDS[currencyId.toUpperCase()]?.[chain] : undefined
+    return currencyId ? TOKEN_SHORTHANDS[currencyId.toUpperCase()]?.[chainId] : undefined
   }, [chainId, currencyId])
 
   const token = useTokenFromMapOrNetwork(tokens, isNative ? undefined : shorthandMatchAddress ?? currencyId)

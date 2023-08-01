@@ -1,23 +1,24 @@
 import { useCallback, useMemo } from 'react'
 
-import { Currency, CurrencyAmount } from '@uniswap/sdk-core'
 import { TransactionResponse } from '@ethersproject/providers'
+import { Currency, CurrencyAmount } from '@uniswap/sdk-core'
 
-import { useVCowContract } from 'legacy/hooks/useContract'
-import { useSingleCallResult, CallStateResult as Result } from 'lib/hooks/multicall'
-import { useTransactionAdder } from 'legacy/state/enhancedTransactions/hooks'
-import { V_COW, COW } from 'legacy/constants/tokens'
-import { AppState } from 'legacy/state'
-import { useAppDispatch, useAppSelector } from 'legacy/state/hooks'
-import { setSwapVCowStatus, SwapVCowStatus } from './actions'
-import { OperationType } from 'legacy/components/TransactionConfirmationModal'
-import { APPROVE_GAS_LIMIT_DEFAULT } from 'legacy/hooks/useApproveCallback/useApproveCallbackMod'
-// import { useCowFromLockedGnoBalances } from 'pages/Profile/LockedGnoVesting/hooks'
-import { SupportedChainId } from '@cowprotocol/cow-sdk'
 import JSBI from 'jsbi'
-import { supportedChainId } from 'legacy/utils/supportedChainId'
-import { useWalletInfo } from 'modules/wallet'
+
+import { ConfirmOperationType } from 'legacy/components/TransactionConfirmationModal'
+import { V_COW, COW } from 'legacy/constants/tokens'
+import { APPROVE_GAS_LIMIT_DEFAULT } from 'legacy/hooks/useApproveCallback/useApproveCallbackMod'
+import { useVCowContract } from 'legacy/hooks/useContract'
+import { AppState } from 'legacy/state'
+import { useTransactionAdder } from 'legacy/state/enhancedTransactions/hooks'
+import { useAppDispatch, useAppSelector } from 'legacy/state/hooks'
+
 import { useTokenBalance } from 'modules/tokens/hooks/useCurrencyBalance'
+import { useWalletInfo } from 'modules/wallet'
+
+import { useSingleCallResult, CallStateResult as Result } from 'lib/hooks/multicall'
+
+import { setSwapVCowStatus, SwapVCowStatus } from './actions'
 
 export type SetSwapVCowStatusCallback = (payload: SwapVCowStatus) => void
 
@@ -29,7 +30,7 @@ type VCowData = {
 }
 
 interface SwapVCowCallbackParams {
-  openModal: (message: string, operationType: OperationType) => void
+  openModal: (message: string, operationType: ConfirmOperationType) => void
   closeModal: () => void
 }
 
@@ -122,7 +123,7 @@ export function useSwapVCowCallback({ openModal, closeModal }: SwapVCowCallbackP
     })
 
     const summary = `Convert vCOW to COW`
-    openModal(summary, OperationType.CONVERT_VCOW)
+    openModal(summary, ConfirmOperationType.CONVERT_VCOW)
 
     return vCowContract
       .swapAll({ from: account, gasLimit: estimatedGas })
@@ -185,9 +186,9 @@ export function useCombinedBalance() {
   return useMemo(() => {
     let tmpBalance = JSBI.BigInt(0)
 
-    const isLoading = account && (!vCowBalance /* || !lockedGnoBalance */ || !cowBalance) ? true : false
+    const isLoading = !!(account && (!vCowBalance /* || !lockedGnoBalance */ || !cowBalance))
 
-    const cow = COW[supportedChainId(chainId) || SupportedChainId.MAINNET]
+    const cow = COW[chainId]
 
     if (account) {
       if (vCowBalance) tmpBalance = JSBI.add(tmpBalance, vCowBalance.quotient)

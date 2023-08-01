@@ -1,10 +1,13 @@
 import { useMemo } from 'react'
+
+import { CurrencyAmount, Token } from '@uniswap/sdk-core'
+
 import { BigNumber } from 'bignumber.js'
+
+import { COW_SUBSIDY_DATA } from 'legacy/components/CowSubsidyModal/constants'
 import { getDiscountFromBalance } from 'legacy/components/CowSubsidyModal/utils'
 import { useCombinedBalance } from 'legacy/state/cowToken/hooks'
-import { COW_SUBSIDY_DATA } from 'legacy/components/CowSubsidyModal/constants'
-import { CurrencyAmount, Token } from '@uniswap/sdk-core'
-import { isSupportedChain } from 'legacy/utils/supportedChainId'
+
 import { useWalletInfo } from 'modules/wallet'
 
 const ZERO_BALANCE_SUBSIDY = { subsidy: { tier: 0, discount: COW_SUBSIDY_DATA[0][1] }, balance: undefined }
@@ -22,7 +25,7 @@ export default function useCowBalanceAndSubsidy(): BalanceAndSubsidy {
   const { chainId } = useWalletInfo()
 
   return useMemo(() => {
-    if (!isSupportedChain(chainId) || !balance || balance?.equalTo('0')) return ZERO_BALANCE_SUBSIDY
+    if (!chainId || !balance || balance?.equalTo('0')) return ZERO_BALANCE_SUBSIDY
 
     const balanceBn = new BigNumber(balance.quotient.toString())
 

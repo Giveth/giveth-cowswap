@@ -1,15 +1,17 @@
+import { NATIVE_CURRENCY_BUY_ADDRESS } from 'legacy/constants'
+import { useAllTransactions } from 'legacy/state/enhancedTransactions/hooks'
+import { EnhancedTransactionDetails } from 'legacy/state/enhancedTransactions/reducer'
+import { Order, OrderStatus } from 'legacy/state/orders/actions'
+import { isOrderExpired } from 'legacy/state/orders/utils'
+import { useSwapState } from 'legacy/state/swap/hooks'
+
 import {
   EthFlowStepper as Pure,
   EthFlowStepperProps as PureProps,
   SmartOrderStatus,
 } from 'modules/swap/pure/EthFlow/EthFlowStepper'
-import { useDetectNativeToken } from 'modules/swap/hooks/useDetectNativeToken'
-import { Order, OrderStatus } from 'legacy/state/orders/actions'
-import { NATIVE_CURRENCY_BUY_ADDRESS } from 'legacy/constants'
-import { isOrderExpired } from 'legacy/state/orders/utils'
-import { useSwapState } from 'legacy/state/swap/hooks'
-import { useAllTransactions } from 'legacy/state/enhancedTransactions/hooks'
-import { EnhancedTransactionDetails } from 'legacy/state/enhancedTransactions/reducer'
+
+import useNativeCurrency from 'lib/hooks/useNativeCurrency'
 import { formatSymbol } from 'utils/format'
 
 type EthFlowStepperProps = {
@@ -18,19 +20,21 @@ type EthFlowStepperProps = {
 
 export function EthFlowStepper(props: EthFlowStepperProps) {
   const { order } = props
-  const { native } = useDetectNativeToken()
+  const native = useNativeCurrency()
+
   const allTxs = useAllTransactions()
   const { withDonation } = useSwapState()
 
   const creationHash = order?.orderCreationHash
   const cancellationHash = order?.cancellationHash
   // TODO: add refund hash when available from API
+
   const creationTx = creationHash ? allTxs[creationHash] : undefined
   const cancellationTx = cancellationHash ? allTxs[cancellationHash] : undefined
 
   const state = mapOrderToEthFlowStepperState(order, creationTx, cancellationTx)
 
-  const isEthFlowOrder = getIsEthFlowOrder(order)
+  const isEthFlowOrder = getIsEthFlowOrder(order?.inputToken.address || '')
 
   if (!order || !state || !isEthFlowOrder) {
     return null
@@ -120,6 +124,6 @@ function didRefundFail(order: Order): boolean | undefined {
 }
 
 // TODO: move this somewhere else?
-export function getIsEthFlowOrder(order: Order | undefined): boolean {
-  return order?.inputToken.address === NATIVE_CURRENCY_BUY_ADDRESS
+export function getIsEthFlowOrder(inputTokenAddress: string): boolean {
+  return inputTokenAddress === NATIVE_CURRENCY_BUY_ADDRESS
 }

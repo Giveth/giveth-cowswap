@@ -1,13 +1,18 @@
 import React, { useContext, useMemo } from 'react'
+
+import { Fraction } from '@uniswap/sdk-core'
+
 import { AlertTriangle } from 'react-feather'
 import styled, { ThemeContext } from 'styled-components/macro'
-import { Fraction } from '@uniswap/sdk-core'
+
 import { MouseoverTooltipContent } from 'legacy/components/Tooltip'
 import { useHighFeeWarning } from 'legacy/state/swap/hooks'
 import TradeGp from 'legacy/state/swap/TradeGp'
-import { AuxInformationContainer } from 'legacy/components/CurrencyInputPanel/CurrencyInputPanelMod'
-import { StyledInfoIcon } from 'modules/swap/pure/styled'
 import { useIsDarkMode } from 'legacy/state/user/hooks'
+
+import { StyledInfoIcon } from 'modules/swap/pure/styled'
+
+import { AuxInformationContainer } from '../swap/styleds'
 
 interface HighFeeContainerProps {
   padding?: string
@@ -52,7 +57,7 @@ const WarningContainer = styled(AuxInformationContainer).attrs((props) => ({
   width: ${({ width = '100%' }) => width};
   border-radius: 16px;
   border: 0;
-  margin: ${({ margin = '0 auto 12px auto' }) => margin};
+  margin: ${({ margin = '0 auto' }) => margin};
   position: relative;
   z-index: 1;
 

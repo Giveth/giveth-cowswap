@@ -1,16 +1,20 @@
+import { useSetAtom } from 'jotai'
 import { useLayoutEffect, useState } from 'react'
-import { useUpdateAtom } from 'jotai/utils'
-import { LimitRateState, updateLimitRateAtom } from 'modules/limitOrders/state/limitRateAtom'
-import { useGetInitialPrice } from 'modules/limitOrders/hooks/useGetInitialPrice'
-import { useLimitOrdersDerivedState } from '../../hooks/useLimitOrdersDerivedState'
-import usePrevious from 'legacy/hooks/usePrevious'
-import { useUpdateActiveRate } from 'modules/limitOrders/hooks/useUpdateActiveRate'
+
 import { Writeable } from 'types'
+
+import usePrevious from 'legacy/hooks/usePrevious'
+
+import { useGetInitialPrice } from 'modules/limitOrders/hooks/useGetInitialPrice'
+import { useUpdateActiveRate } from 'modules/limitOrders/hooks/useUpdateActiveRate'
+import { LimitRateState, updateLimitRateAtom } from 'modules/limitOrders/state/limitRateAtom'
+
+import { useLimitOrdersDerivedState } from '../../hooks/useLimitOrdersDerivedState'
 
 // Fetch and update initial price for the selected token pair
 export function InitialPriceUpdater() {
   const { inputCurrency, outputCurrency } = useLimitOrdersDerivedState()
-  const updateLimitRateState = useUpdateAtom(updateLimitRateAtom)
+  const updateLimitRateState = useSetAtom(updateLimitRateAtom)
   const updateRate = useUpdateActiveRate()
 
   const [isInitialPriceSet, setIsInitialPriceSet] = useState(false)

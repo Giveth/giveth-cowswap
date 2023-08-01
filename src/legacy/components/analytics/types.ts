@@ -1,5 +1,7 @@
+import { OrderClass } from '@cowprotocol/cow-sdk'
+
 export enum Category {
-  SWAP = 'Swap',
+  TRADE = 'Trade',
   LIST = 'Lists',
   CURRENCY_SELECT = 'Currency Select',
   EXPERT_MODE = 'Expert mode',
@@ -14,6 +16,8 @@ export enum Category {
   EXTERNAL_LINK = 'External Link',
   INIT = 'Init',
   SERVICE_WORKER = 'Service worker',
+  TWAP = 'TWAP',
+  COW_FORTUNE = 'CoWFortune',
 }
 
 export interface EventParams {
@@ -28,4 +32,7 @@ export enum Dimensions {
   walletName = 'walletName',
   customBrowserType = 'customBrowserType',
   userAddress = 'userAddress',
+  market = 'market',
 }
+
+export type AnalyticsOrderType = OrderClass | 'TWAP'

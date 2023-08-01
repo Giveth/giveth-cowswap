@@ -1,58 +1,64 @@
 import { Trans } from '@lingui/macro'
-import { Routes } from 'constants/routes'
+import { matchPath, useLocation } from 'react-router-dom'
 
-import { useMemo } from 'react'
-import { useTradeState } from 'modules/trade/hooks/useTradeState'
+import { useTradeRouteContext } from 'modules/trade/hooks/useTradeRouteContext'
 import { parameterizeTradeRoute } from 'modules/trade/utils/parameterizeTradeRoute'
+
+import { Routes, RoutesValues } from 'common/constants/routes'
+import { FeatureGuard } from 'common/containers/FeatureGuard'
+
 import * as styledEl from './styled'
-import { FeatureFlag } from 'utils/featureFlags'
-import { ADVANCED_ORDERS_FEATURE_FLAG } from 'constants/featureFlags'
+
+interface MenuItemConfig {
+  route: RoutesValues
+  label: string
+  featureGuard?: string
+  onClick?: () => void
+}
+
+const menuItems: MenuItemConfig[] = [
+  { route: Routes.SWAP, label: 'Swap' },
+  { route: Routes.LIMIT_ORDER, label: 'Limit' },
+  {
+    route: Routes.ADVANCED_ORDERS,
+    label: 'Advanced',
+    featureGuard: 'advancedOrdersEnabled',
+  },
+]
 
 export function TradeWidgetLinks() {
-  const { state } = useTradeState()
-
-  const tradeContext = useMemo(
-    () => ({
-      inputCurrencyId: state?.inputCurrencyId || undefined,
-      outputCurrencyId: state?.outputCurrencyId || undefined,
-      chainId: state?.chainId?.toString(),
-    }),
-    [state]
-  )
+  const tradeContext = useTradeRouteContext()
+  const location = useLocation()
 
   return (
     <styledEl.Wrapper>
-      <styledEl.MenuItem>
-        <styledEl.Link
-          className={({ isActive }) => (isActive ? 'active' : undefined)}
-          to={parameterizeTradeRoute(tradeContext, Routes.SWAP)}
-        >
-          <Trans>Swap</Trans>
-        </styledEl.Link>
-      </styledEl.MenuItem>
+      {menuItems.map((item) => {
+        const routePath = parameterizeTradeRoute(tradeContext, item.route)
+        const isActive = !!matchPath(location.pathname, routePath)
 
-      <styledEl.MenuItem>
-        <styledEl.Link
-          className={({ isActive }) => (isActive ? 'active' : undefined)}
-          to={parameterizeTradeRoute(tradeContext, Routes.LIMIT_ORDER)}
-        >
-          <Trans>Limit</Trans>
-          <styledEl.Badge>
-            <Trans>Beta</Trans>
-          </styledEl.Badge>
-        </styledEl.Link>
-      </styledEl.MenuItem>
+        const menuItem = <MenuItem key={item.label} routePath={routePath} item={item} isActive={isActive} />
 
-      {FeatureFlag.get(ADVANCED_ORDERS_FEATURE_FLAG) && (
-        <styledEl.MenuItem>
-          <styledEl.Link
-            className={({ isActive }) => (isActive ? 'active' : undefined)}
-            to={parameterizeTradeRoute(tradeContext, Routes.ADVANCED_ORDERS)}
-          >
-            <Trans>Advanced</Trans>
-          </styledEl.Link>
-        </styledEl.MenuItem>
-      )}
+        return item.featureGuard ? (
+          <FeatureGuard key={item.label} featureFlag={item.featureGuard}>
+            {menuItem}
+          </FeatureGuard>
+        ) : (
+          menuItem
+        )
+      })}
     </styledEl.Wrapper>
   )
 }
+
+const MenuItem = ({ routePath, item, isActive }: { routePath: string; item: MenuItemConfig; isActive: boolean }) => (
+  <styledEl.MenuItem isActive={isActive}>
+    <styledEl.Link to={routePath}>
+      <Trans>{item.label}</Trans>
+      {item.featureGuard && (
+        <styledEl.Badge>
+          <Trans>Beta</Trans>
+        </styledEl.Badge>
+      )}
+    </styledEl.Link>
+  </styledEl.MenuItem>
+)

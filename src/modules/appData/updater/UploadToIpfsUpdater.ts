@@ -1,16 +1,15 @@
 import { useAtomValue, useSetAtom } from 'jotai'
 import { useEffect, useRef } from 'react'
+
 import ms from 'ms.macro'
 
-import { COW_IPFS_OPTIONS } from 'legacy/constants'
-
+import { uploadAppDataDocOrderbookApi } from '../services'
 import {
   appDataUploadQueueAtom,
   removeAppDataFromUploadQueueAtom,
   updateAppDataOnUploadQueueAtom,
 } from '../state/atoms'
 import { AppDataKeyParams, AppDataRecord, UpdateAppDataOnUploadQueueParams } from '../types'
-import { metadataApiSDK } from 'cowSdk'
 
 const UPLOAD_CHECK_INTERVAL = ms`1 minute`
 const BASE_FOR_EXPONENTIAL_BACKOFF = 2 // in seconds, converted to milliseconds later
@@ -55,9 +54,9 @@ async function _uploadToIpfs(
   updatePending: (params: UpdateAppDataOnUploadQueueParams) => void,
   removePending: (params: AppDataKeyParams) => void
 ) {
-  const { doc, chainId, orderId, uploading, failedAttempts, lastAttempt } = appDataRecord
+  const { fullAppData, appDataKeccak256, chainId, orderId, uploading, failedAttempts, lastAttempt } = appDataRecord
 
-  if (!doc) {
+  if (!fullAppData || !appDataKeccak256) {
     // No actual doc to upload, nothing to do here
     removePending({ chainId, orderId })
   } else if (_canUpload(uploading, failedAttempts, lastAttempt)) {
@@ -90,33 +89,18 @@ async function _actuallyUploadToIpfs(
   updatePending: (params: UpdateAppDataOnUploadQueueParams) => void,
   removePending: (params: AppDataKeyParams) => void
 ) {
-  const { doc, chainId, orderId, failedAttempts, hash } = appDataRecord
+  const { fullAppData, appDataKeccak256, chainId, orderId, failedAttempts } = appDataRecord
 
-  if (!doc) return
+  if (!fullAppData || !appDataKeccak256) return
 
   // Update state to prevent it to be uploaded by another process in the meantime
   updatePending({ chainId, orderId, uploading: true })
 
   try {
-    const actualHash = await metadataApiSDK.uploadMetadataDocToIpfs(doc, COW_IPFS_OPTIONS)
-
+    await uploadAppDataDocOrderbookApi(appDataKeccak256, fullAppData)
     removePending({ chainId, orderId })
-
-    if (hash !== actualHash) {
-      // TODO: add sentry error to track hard failure
-      console.error(
-        `[UploadToIpfsUpdater] Uploaded data hash (${actualHash}) differs from calculated (${hash}) for doc`,
-        JSON.stringify(doc)
-      )
-    } else {
-      console.debug(`[UploadToIpfsUpdater] Uploaded doc with hash ${actualHash}`, JSON.stringify(doc))
-    }
   } catch (e: any) {
-    // TODO: add sentry error to track soft failure
-    console.warn(
-      `[UploadToIpfsUpdater] Failed to upload doc, will try again. Reason: ${e.message}`,
-      JSON.stringify(doc)
-    )
+    console.error(`[UploadToIpfsUpdater] Failed to upload doc, will try again. Reason: ${e.message}`, e, fullAppData)
     updatePending({ chainId, orderId, uploading: false, failedAttempts: failedAttempts + 1, lastAttempt: Date.now() })
   }
 }

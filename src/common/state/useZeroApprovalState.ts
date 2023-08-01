@@ -1,5 +1,6 @@
-import { Currency } from '@uniswap/sdk-core'
 import { atom, useAtomValue } from 'jotai'
+
+import { Currency } from '@uniswap/sdk-core'
 
 interface ZeroApprovalState {
   isApproving: boolean
@@ -11,6 +12,5 @@ export const zeroApprovalState = atom<ZeroApprovalState>({
 })
 
 export function useZeroApprovalState() {
-  const state = useAtomValue(zeroApprovalState)
-  return state
+  return useAtomValue(zeroApprovalState)
 }

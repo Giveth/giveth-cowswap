@@ -1,4 +1,5 @@
 import styled from 'styled-components/macro'
+
 import { useDonation } from 'modules/swap/hooks/useDonation'
 
 interface IPicker {
@@ -18,7 +19,11 @@ const DonationContainer = styled.div`
   font-style: normal;
   font-weight: 500;
   line-height: normal;
+  width: 100%;
   height: 138px;
+  p {
+    margin: 0 2px;
+  }
 `
 
 const Label = styled.div`
@@ -108,20 +113,24 @@ const DonationInput = () => {
             min={0}
             max={100}
             step={0.01}
-            value={donationPercentage}
+            defaultValue={donationPercentage}
             onChange={(e) => {
               let input = Number(e.target.value)
-              if (input < 100) {
-                input = Number(Number(input).toFixed(2))
-                setDonationPercentage(input)
-              }
+              input = Number(Number(input).toFixed(3))
+              setDonationPercentage(input)
             }}
           />
           <PercentageSymbol>%</PercentageSymbol>
         </InputContainer>
       </Options>
       <Label>
-        <input type="checkbox" checked={!isDonationEnabled} onChange={() => toggleDonationEnabled()} />
+        <input
+          type="checkbox"
+          checked={!isDonationEnabled}
+          onChange={() => {
+            toggleDonationEnabled()
+          }}
+        />
         <span>I don't want to support public goods</span>
       </Label>
     </DonationContainer>

@@ -1,13 +1,17 @@
-import { SafeInfoResponse } from '@safe-global/api-kit'
 import { useMemo } from 'react'
-import { getSafeWebUrl } from 'api/gnosisSafe'
-import { ActivityDerivedState } from 'modules/account/containers/Transaction'
+
+import { SafeInfoResponse } from '@safe-global/api-kit'
+
+import { ActivityDescriptors, ActivityStatus, ActivityType } from 'legacy/hooks/useRecentActivity'
 import { EnhancedTransactionDetails } from 'legacy/state/enhancedTransactions/reducer'
 import { Order, OrderStatus } from 'legacy/state/orders/actions'
 import { getEtherscanLink } from 'legacy/utils'
 import { getExplorerOrderLink } from 'legacy/utils/explorer'
-import { ActivityDescriptors, ActivityStatus, ActivityType } from 'legacy/hooks/useRecentActivity'
+
+import { ActivityDerivedState } from 'modules/account/containers/Transaction'
 import { useGnosisSafeInfo } from 'modules/wallet'
+
+import { getSafeWebUrl } from 'api/gnosisSafe'
 
 export function useActivityDerivedState({
   chainId,
@@ -89,7 +93,7 @@ export function getActivityLinkUrl(params: {
 
     if (transactionHash) {
       // It's an Ethereum transaction: Etherscan link
-      return getEtherscanLink(chainId, transactionHash, 'transaction')
+      return getEtherscanLink(chainId, 'transaction', transactionHash)
     } else if (safeTransaction && safeTransaction) {
       // It's a safe transaction: Gnosis Safe Web link
       const { safe, safeTxHash } = safeTransaction
@@ -98,7 +102,7 @@ export function getActivityLinkUrl(params: {
   } else if (order) {
     if (order.orderCreationHash && (order.status === OrderStatus.CREATING || order.status === OrderStatus.FAILED)) {
       // It's a EthFlow transaction: Etherscan link
-      return getEtherscanLink(chainId, order.orderCreationHash, 'transaction')
+      return getEtherscanLink(chainId, 'transaction', order.orderCreationHash)
     } else {
       // It's an order: GP Explorer link
       return getExplorerOrderLink(chainId, id)

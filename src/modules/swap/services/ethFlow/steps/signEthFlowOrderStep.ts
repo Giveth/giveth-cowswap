@@ -1,13 +1,14 @@
-import { NativeCurrency } from '@uniswap/sdk-core'
-import { ContractTransaction } from '@ethersproject/contracts'
-
-import { CoWSwapEthFlow } from 'abis/types/ethflow'
-import { logTradeFlow, logTradeFlowError } from 'modules/trade/utils/logger'
-import { calculateGasMargin } from 'legacy/utils/calculateGasMargin'
-import { getOrderParams, mapUnsignedOrderToOrder, PostOrderParams } from 'legacy/utils/trade'
-import { Order } from 'legacy/state/orders/actions'
+import { CoWSwapEthFlow } from '@cowprotocol/abis'
 import { OrderClass, UnsignedOrder } from '@cowprotocol/cow-sdk'
+import { ContractTransaction } from '@ethersproject/contracts'
+import { NativeCurrency } from '@uniswap/sdk-core'
+
+import { Order } from 'legacy/state/orders/actions'
+import { calculateGasMargin } from 'legacy/utils/calculateGasMargin'
+import { getSignOrderParams, mapUnsignedOrderToOrder, PostOrderParams } from 'legacy/utils/trade'
+
 import { ETHFLOW_GAS_LIMIT_DEFAULT } from 'modules/swap/services/ethFlow/const'
+import { logTradeFlow, logTradeFlowError } from 'modules/trade/utils/logger'
 
 type EthFlowOrderParams = Omit<PostOrderParams, 'sellToken'> & {
   sellToken: NativeCurrency
@@ -36,7 +37,7 @@ export async function signEthFlowOrderStep(
   logTradeFlow('ETH FLOW', '[EthFlow::SignEthFlowOrderStep] - signing orderParams onchain', orderParams)
 
   const etherValue = orderParams.sellAmountBeforeFee
-  const { order, quoteId, summary } = getOrderParams(orderParams)
+  const { order, quoteId, summary } = getSignOrderParams(orderParams)
 
   if (!quoteId) {
     throw new Error('[EthFlow::SignEthFlowOrderStep] No quoteId passed')
