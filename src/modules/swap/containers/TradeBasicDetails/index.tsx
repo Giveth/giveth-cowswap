@@ -51,6 +51,7 @@ export function TradeBasicDetails(props: TradeBasicDetailsProp) {
     (isEoaEthFlow || isExpertMode || !allowedSlippagePercent.equalTo(INITIAL_ALLOWED_SLIPPAGE_PERCENT)) &&
     !isWrapOrUnwrap
   const showRowReceivedAfterSlippage = isExpertMode && trade
+
   return (
     <LowerSectionWrapper {...boxProps}>
       {/* Fees */}
@@ -68,7 +69,6 @@ export function TradeBasicDetails(props: TradeBasicDetailsProp) {
       {showRowReceivedAfterSlippage && (
         <RowReceivedAfterSlippage trade={trade} allowedSlippage={allowedSlippagePercent} showHelpers={true} />
       )}
-
       {/* DONATION */}
       {showDonation && donationAmount && (
         <StyledRowBetween>

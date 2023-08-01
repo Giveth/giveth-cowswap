@@ -28,12 +28,13 @@ export async function ethFlow(
     checkInFlightOrderIdExists,
     addInFlightOrderId,
   } = ethFlowContext
-  console.log({ ethFlowContext })
+
   logTradeFlow('ETH FLOW', 'STEP 1: confirm price impact')
   if (priceImpactParams?.priceImpact && !(await confirmPriceImpactWithoutFee(priceImpactParams.priceImpact))) {
     return undefined
   }
-  // TODO: HEREEEE
+
+  // TODO: IMPROVE DONATION FLOW
   logTradeFlow('ETH FLOW', 'STEP 1.5: Donate')
   if (context.withDonation) {
     // send ether to donation address

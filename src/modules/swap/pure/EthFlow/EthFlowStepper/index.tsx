@@ -15,8 +15,6 @@ export enum SmartOrderStatus {
   CREATION_MINED = 'CREATED',
   INDEXED = 'INDEXED',
   FILLED = 'FILLED',
-  DONATING = 'DONATING',
-  DONATED = 'DONATED',
 }
 
 type TxState = {
@@ -66,6 +64,9 @@ export interface EthFlowStepperProps {
    */
   cancellation: TxState
 
+  /**
+   * Integration on donation flow
+   */
   donation?: any // TODO: type
 }
 

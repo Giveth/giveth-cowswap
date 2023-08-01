@@ -57,15 +57,12 @@ root.render(
                   <BlockNumberProvider>
                     <WithLDProvider>
                       <Updaters />
-                      <ThemeProvider>
-                        <ThemedGlobalStyle />
-                        <FeatureGuard featureFlag="cowFortuneEnabled">
-                          <FortuneWidget />
-                        </FeatureGuard>
-                        <Popups />
-                        <AppziButton />
-                        <App />
-                      </ThemeProvider>
+                      <FeatureGuard featureFlag="cowFortuneEnabled">
+                        <FortuneWidget />
+                      </FeatureGuard>
+                      <Popups />
+                      <AppziButton />
+                      <App />
                     </WithLDProvider>
                   </BlockNumberProvider>
                 </ThemeProvider>

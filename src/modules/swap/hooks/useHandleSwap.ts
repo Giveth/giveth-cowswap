@@ -22,6 +22,7 @@ export function useHandleSwap(priceImpactParams: PriceImpact): () => Promise<voi
   const safeBundleEthFlowContext = useSafeBundleEthFlowContext()
   const { confirmPriceImpactWithoutFee } = useConfirmPriceImpactWithoutFee()
   const { onChangeRecipient } = useSwapActionHandlers()
+
   return useCallback(async () => {
     if (!swapFlowContext && !ethFlowContext && !safeBundleApprovalFlowContext && !safeBundleEthFlowContext) return
 

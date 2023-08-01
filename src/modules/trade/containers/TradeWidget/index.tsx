@@ -22,6 +22,8 @@ import { CurrencyInfo } from 'common/pure/CurrencyInputPanel/types'
 import * as styledEl from './styled'
 import { TradeWidgetModals } from './TradeWidgetModals'
 
+import { CommonTradeUpdater } from '../../updaters/CommonTradeUpdater'
+import { DisableNativeTokenSellingUpdater } from '../../updaters/DisableNativeTokenSellingUpdater'
 import { PriceImpactUpdater } from '../../updaters/PriceImpactUpdater'
 import { WrapFlowActionButton } from '../WrapFlowActionButton'
 import { WrapNativeModal } from '../WrapNativeModal'
@@ -46,6 +48,7 @@ interface TradeWidgetParams {
   isRateLoading?: boolean
   isDonationEnabled?: boolean
   disableQuotePolling?: boolean
+  disableNativeSelling?: boolean
 }
 
 export interface TradeWidgetSlots {
@@ -71,7 +74,7 @@ export function TradeWidget(props: TradeWidgetProps) {
   const { id, slots, inputCurrencyInfo, outputCurrencyInfo, actions, params, disableOutput } = props
   const { settingsWidget, lockScreen, middleContent, bottomContent } = slots
 
-  const { onCurrencySelection, onUserInput, onSwitchTokens, onDonationToggle, onChangeRecipient } = actions
+  const { onCurrencySelection, onUserInput, onSwitchTokens, onChangeRecipient, onDonationToggle } = actions
   const {
     compactView,
     showRecipient,
@@ -84,6 +87,7 @@ export function TradeWidget(props: TradeWidgetProps) {
     isDonationEnabled,
     disableQuotePolling = false,
     isExpertMode,
+    disableNativeSelling = false,
   } = params
 
   const { chainId } = useWalletInfo()
@@ -132,6 +136,8 @@ export function TradeWidget(props: TradeWidgetProps) {
       <WrapNativeModal />
       <PriceImpactUpdater />
       <TradeFormValidationUpdater isExpertMode={isExpertMode} />
+      <CommonTradeUpdater />
+      {disableNativeSelling && <DisableNativeTokenSellingUpdater />}
 
       <styledEl.Container id={id}>
         <styledEl.ContainerBox>

@@ -19,6 +19,7 @@ import { stringToCurrency, useTradeExactInWithFee, useTradeExactOutWithFee } fro
 import TradeGp from 'legacy/state/swap/TradeGp'
 import { isWrappingTrade } from 'legacy/state/swap/utils'
 import { useIsExpertMode } from 'legacy/state/user/hooks'
+import { isAddress } from 'legacy/utils'
 import { registerOnWindow } from 'legacy/utils/misc'
 
 import { useDonation } from 'modules/swap/hooks/useDonation'
@@ -28,6 +29,7 @@ import { useNavigateOnCurrencySelection } from 'modules/trade/hooks/useNavigateO
 import { useTradeNavigate } from 'modules/trade/hooks/useTradeNavigate'
 import { useWalletInfo } from 'modules/wallet'
 
+import { useAreThereTokensWithSameSymbol } from 'common/hooks/useAreThereTokensWithSameSymbol'
 import { useIsProviderNetworkUnsupported } from 'common/hooks/useIsProviderNetworkUnsupported'
 import { useTokenBySymbolOrAddress } from 'common/hooks/useTokenBySymbolOrAddress'
 import tryParseCurrencyAmount from 'lib/utils/tryParseCurrencyAmount'
@@ -37,7 +39,6 @@ import { Field, setRecipient, switchCurrencies, typeInput, setWithDonation } fro
 import { SwapState } from './reducer'
 
 import { TOKEN_SHORTHANDS } from '../../constants/tokens'
-import { isAddress } from '../../utils'
 
 export const BAD_RECIPIENT_ADDRESSES: { [address: string]: true } = {
   '0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f': true, // v2 factory
@@ -257,6 +258,7 @@ function _computeUnknownPriceImpactAcceptedState({
 export function useDerivedSwapInfo(): DerivedSwapInfo {
   const { account, chainId } = useWalletInfo() // MOD: chainId
   const { donationPercentage } = useDonation()
+
   const {
     independentField,
     typedValue,
@@ -265,9 +267,14 @@ export function useDerivedSwapInfo(): DerivedSwapInfo {
     recipient,
     withDonation,
   } = useSwapState()
+  const checkTokensWithSameSymbol = useAreThereTokensWithSameSymbol()
 
-  const inputCurrency = useTokenBySymbolOrAddress(inputCurrencyId)
-  const outputCurrency = useTokenBySymbolOrAddress(outputCurrencyId)
+  const inputCurrencyIsDoubled = checkTokensWithSameSymbol(inputCurrencyId)
+  const outputCurrencyIsDoubled = checkTokensWithSameSymbol(outputCurrencyId)
+
+  const inputCurrency = useTokenBySymbolOrAddress(inputCurrencyIsDoubled ? null : inputCurrencyId)
+  const outputCurrency = useTokenBySymbolOrAddress(outputCurrencyIsDoubled ? null : outputCurrencyId)
+
   const recipientLookup = useENS(recipient ?? undefined)
   const to: string | null = (recipient ? recipientLookup.address : account) ?? null
 
@@ -467,8 +474,8 @@ export function queryParametersToSwapState(
     typedValue,
     independentField,
     recipient,
-    withDonation: !!parsedQs.withDonation,
     recipientAddress,
+    withDonation: !!parsedQs.withDonation,
   }
 }
 

@@ -28,6 +28,7 @@ export function EthFlowStepper(props: EthFlowStepperProps) {
   const creationHash = order?.orderCreationHash
   const cancellationHash = order?.cancellationHash
   // TODO: add refund hash when available from API
+
   const creationTx = creationHash ? allTxs[creationHash] : undefined
   const cancellationTx = cancellationHash ? allTxs[cancellationHash] : undefined
 
