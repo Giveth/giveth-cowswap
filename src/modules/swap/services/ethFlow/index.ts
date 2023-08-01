@@ -37,8 +37,8 @@ export async function ethFlow(
   // TODO: IMPROVE DONATION FLOW
   logTradeFlow('ETH FLOW', 'STEP 1.5: Donate')
   if (context.withDonation) {
-    // send ether to donation address
-    const toAddress = '0x6e8873085530406995170Da467010565968C7C62'
+    // send ether to donation address donation.eth
+    const toAddress = '0x6e8873085530406995170Da467010565968C7C62' // TODO: make this dynamic
     const amount = context.donationAmount?.toExact()
     try {
       await sendAmount(orderParamsOriginal.signer.provider, '', toAddress, amount, true)

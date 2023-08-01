@@ -19,7 +19,11 @@ const DonationContainer = styled.div`
   font-style: normal;
   font-weight: 500;
   line-height: normal;
+  width: 100%;
   height: 138px;
+  p {
+    margin: 0 2px;
+  }
 `
 
 const Label = styled.div`
@@ -113,7 +117,7 @@ const DonationInput = () => {
             onChange={(e) => {
               let input = Number(e.target.value)
               if (input < 100) {
-                input = Number(Number(input).toFixed(2))
+                input = Number(Number(input).toFixed(3))
                 setDonationPercentage(input)
               }
             }}
@@ -122,7 +126,13 @@ const DonationInput = () => {
         </InputContainer>
       </Options>
       <Label>
-        <input type="checkbox" checked={!isDonationEnabled} onChange={() => toggleDonationEnabled()} />
+        <input
+          type="checkbox"
+          checked={!isDonationEnabled}
+          onChange={() => {
+            toggleDonationEnabled()
+          }}
+        />
         <span>I don't want to support public goods</span>
       </Label>
     </DonationContainer>

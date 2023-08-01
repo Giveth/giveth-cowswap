@@ -292,7 +292,7 @@ export function useDerivedSwapInfo(): DerivedSwapInfo {
   // 1% is the default donation amount
   const donationAmount = useMemo(() => {
     return parsedAmount
-      ? parsedAmount.multiply(JSBI.BigInt(donationPercentage * 100)).divide(JSBI.BigInt(10000))
+      ? parsedAmount.multiply(JSBI.BigInt(donationPercentage * 10000)).divide(JSBI.BigInt(1000000))
       : undefined
   }, [parsedAmount, donationPercentage])
 

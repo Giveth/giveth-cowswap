@@ -13,6 +13,7 @@ import { RowBetween, RowFixed } from 'legacy/components/Row'
 import { AdvancedSwapDetails } from 'legacy/components/swap/AdvancedSwapDetails'
 import { AuxInformationContainer, TruncatedText } from 'legacy/components/swap/styleds'
 import { WarningProps } from 'legacy/components/SwapWarnings'
+import { MouseoverTooltipContent } from 'legacy/components/Tooltip'
 import { INPUT_OUTPUT_EXPLANATION } from 'legacy/constants'
 import { useHigherUSDValue } from 'legacy/hooks/useStablecoinPrice'
 import { Field } from 'legacy/state/swap/actions'
@@ -21,6 +22,7 @@ import { ThemedText } from 'legacy/theme'
 import { isAddress, shortenAddress } from 'legacy/utils'
 import { computeSlippageAdjustedAmounts } from 'legacy/utils/prices'
 
+import { StyledInfoIcon } from 'modules/swap/pure/styled'
 import { PriceUpdatedBanner } from 'modules/trade/pure/PriceUpdatedBanner'
 
 import { CurrencyLogo } from 'common/pure/CurrencyLogo'
@@ -213,14 +215,14 @@ export default function SwapModalHeader({
         <RowBetween>
           <Text fontSize={12} fontWeight={500} color={theme.text3}>
             Giveth Donation{' '}
-            {/* <MouseoverTooltipContent content={'1% of your swap goes to donation.eth'} wrap>
+            <MouseoverTooltipContent content={'1% of your swap goes to donation.eth'} wrap>
               <StyledInfoIcon size={16} />
-            </MouseoverTooltipContent> */}
+            </MouseoverTooltipContent>
           </Text>
           <Text fontSize={12} fontWeight={500}>
-            {`${donationAmount.toFixed(4)} ${donationAmount.currency.symbol} (≈$${+donationAmount
+            {`${donationAmount.toFixed(5)} ${donationAmount.currency.symbol} (≈$${+donationAmount
               .multiply(trade?.executionPrice!)
-              .toFixed(4)})`}
+              .toFixed(5)})`}
           </Text>
         </RowBetween>
       )}
