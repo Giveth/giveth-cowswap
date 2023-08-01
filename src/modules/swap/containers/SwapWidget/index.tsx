@@ -66,6 +66,7 @@ export function SwapWidget() {
     allowedSlippage,
     currencies,
     currenciesIds,
+    donationAmount,
     v2Trade: trade,
   } = useDerivedSwapInfo()
   const parsedAmounts = useSwapCurrenciesAmounts()
@@ -150,6 +151,7 @@ export function SwapWidget() {
     priceImpact: priceImpactParams.priceImpact,
     rateInfoParams,
     isDonationEnabled,
+    donationAmount,
   }
 
   const ethFlowProps: EthFlowProps = {
@@ -226,6 +228,7 @@ export function SwapWidget() {
     discount: subsidyAndBalance.subsidy.discount || 0,
     rateInfoParams,
     isDonationEnabled,
+    donationAmount,
   }
 
   const slots = {
@@ -251,6 +254,7 @@ export function SwapWidget() {
     disableQuotePolling: true,
     isExpertMode,
     isDonationEnabled,
+    donationAmount,
   }
 
   return (

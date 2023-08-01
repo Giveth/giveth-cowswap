@@ -32,6 +32,8 @@ const defaultProps: TradeSummaryProps & TradeSummaryContentProps = {
   fee: CurrencyAmount.fromRawAmount(currency, fee * 10 ** 18),
   showHelpers: true,
   showFee: true,
+  showDonation: false,
+  donationAmount: CurrencyAmount.fromRawAmount(currency, 0),
 }
 
 export default <TradeSummaryContent {...defaultProps} />

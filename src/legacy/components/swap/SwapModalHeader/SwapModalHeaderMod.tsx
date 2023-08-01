@@ -209,6 +209,21 @@ export default function SwapModalHeader({
       )}
       <StyledRateInfo label="Price" stylized={true} rateInfoParams={rateInfoParams} />
       <AdvancedSwapDetails trade={trade} allowedSlippage={allowedSlippage} />
+      {donationAmount && (
+        <RowBetween>
+          <Text fontSize={12} fontWeight={500} color={theme.text3}>
+            Giveth Donation{' '}
+            {/* <MouseoverTooltipContent content={'1% of your swap goes to donation.eth'} wrap>
+              <StyledInfoIcon size={16} />
+            </MouseoverTooltipContent> */}
+          </Text>
+          <Text fontSize={12} fontWeight={500}>
+            {`${donationAmount.toFixed(4)} ${donationAmount.currency.symbol} (≈$${+donationAmount
+              .multiply(trade?.executionPrice!)
+              .toFixed(4)})`}
+          </Text>
+        </RowBetween>
+      )}
       {showAcceptChanges && <PriceUpdatedBanner onClick={onAcceptChanges} />}
       <AutoColumn
         justify="flex-start"
@@ -239,21 +254,6 @@ export default function SwapModalHeader({
           </ThemedText.Italic>
         )}
       </AutoColumn>
-      {donationAmount && (
-        <RowBetween>
-          <Text fontSize={12} fontWeight={500} color={theme.text3}>
-            Giveth Donation{' '}
-            {/* <MouseoverTooltipContent content={'1% of your swap goes to donation.eth'} wrap>
-              <StyledInfoIcon size={16} />
-            </MouseoverTooltipContent> */}
-          </Text>
-          <Text fontSize={12} fontWeight={500}>
-            {`${donationAmount.toExact()} ${donationAmount.currency.symbol} (≈$${+donationAmount
-              .multiply(trade?.executionPrice!)
-              .toExact()})`}
-          </Text>
-        </RowBetween>
-      )}
       {recipient !== null ? (
         <AutoColumn justify="flex-start" gap="sm">
           <ThemedText.Main style={{ padding: '0.75rem 1rem' }}>

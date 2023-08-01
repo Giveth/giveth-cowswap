@@ -42,6 +42,7 @@ export function ConfirmSwapModal({
   recipient,
   priceImpact,
   rateInfoParams,
+  donationAmount,
 }: ConfirmSwapModalProps) {
   const { swapErrorMessage, showConfirm, attemptingTxn, txHash, tradeToConfirm: originalTrade } = swapConfirmState
   const { allowsOffchainSigning } = useWalletDetails()
@@ -56,6 +57,7 @@ export function ConfirmSwapModal({
         trade={trade}
         rateInfoParams={rateInfoParams}
         allowsOffchainSigning={allowsOffchainSigning}
+        donationAmount={donationAmount}
         allowedSlippage={allowedSlippage}
         priceImpact={priceImpact}
         recipient={recipient}
@@ -67,6 +69,7 @@ export function ConfirmSwapModal({
     trade,
     allowsOffchainSigning,
     allowedSlippage,
+    donationAmount,
     priceImpact,
     recipient,
     showAcceptChanges,

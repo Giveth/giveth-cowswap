@@ -2,6 +2,7 @@ import { Currency, CurrencyAmount, Percent } from '@uniswap/sdk-core'
 
 import { BoxProps } from 'rebass'
 
+import { RowFixed } from 'legacy/components/Row'
 import { MouseoverTooltipContent } from 'legacy/components/Tooltip'
 import { INITIAL_ALLOWED_SLIPPAGE_PERCENT } from 'legacy/constants'
 import { useHigherUSDValue } from 'legacy/hooks/useStablecoinPrice'
@@ -51,7 +52,6 @@ export function TradeBasicDetails(props: TradeBasicDetailsProp) {
     (isEoaEthFlow || isExpertMode || !allowedSlippagePercent.equalTo(INITIAL_ALLOWED_SLIPPAGE_PERCENT)) &&
     !isWrapOrUnwrap
   const showRowReceivedAfterSlippage = isExpertMode && trade
-
   return (
     <LowerSectionWrapper {...boxProps}>
       {/* Fees */}
@@ -72,12 +72,14 @@ export function TradeBasicDetails(props: TradeBasicDetailsProp) {
       {/* DONATION */}
       {showDonation && donationAmount && (
         <StyledRowBetween>
-          <TextWrapper>
-            Giveth Donation{' '}
-            <MouseoverTooltipContent content={'1% of your swap goes to donation.eth'} wrap>
-              <StyledInfoIcon size={16} />
-            </MouseoverTooltipContent>
-          </TextWrapper>
+          <RowFixed>
+            <TextWrapper>
+              Giveth Donation{'  '}
+              <MouseoverTooltipContent wrap={false} content={'1% of your swap goes to donation.eth'}>
+                <StyledInfoIcon size={16} />
+              </MouseoverTooltipContent>
+            </TextWrapper>
+          </RowFixed>
           <TextWrapper>
             {`${donationAmount.toExact()} ${donationAmount.currency.symbol} (≈$${+donationAmount
               .multiply(trade?.executionPrice!)

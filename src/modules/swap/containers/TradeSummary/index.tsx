@@ -18,7 +18,6 @@ export type TradeSummaryProps = {
 export function TradeSummary({ trade, ...restProps }: TradeSummaryProps) {
   const { allowsOffchainSigning } = useWalletDetails()
   const feeFiatValue = useHigherUSDValue(trade.fee.feeAsCurrency)
-
   return (
     <TradeSummaryContent
       {...restProps}

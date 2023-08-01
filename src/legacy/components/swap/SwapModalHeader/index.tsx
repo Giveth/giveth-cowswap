@@ -49,7 +49,6 @@ export default function SwapModalHeader(
 ) {
   const { allowsOffchainSigning } = useWalletDetails()
   const NoImpactWarningComponent = <NoImpactWarning isAccepted={true} withoutAccepting={true} />
-
   return (
     <Wrapper>
       <SwapModalHeaderMod

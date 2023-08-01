@@ -43,7 +43,6 @@ export const TradeRates = React.memo(function (props: TradeRatesProps) {
     donationAmount,
   } = props
   // const openCowSubsidyModal = useOpenModal(ApplicationModal.COW_SUBSIDY)
-
   const showPrice = !!trade
   const showTradeBasicDetails = (isFeeGreater || trade) && fee
   const showRowDeadline = !!trade

@@ -35,7 +35,6 @@ export function TradeSummaryContent(props: TradeSummaryContentProps) {
     showDonation,
     donationAmount,
   } = props
-  console.log({ props })
   return (
     <Wrapper>
       <AutoColumn gap="2px">
@@ -48,7 +47,6 @@ export function TradeSummaryContent(props: TradeSummaryContentProps) {
             showHelpers={showHelpers}
           />
         )}
-
         {/* Slippage */}
         <RowSlippage allowedSlippage={allowedSlippage} showSettingOnClick={false} />
 
@@ -57,7 +55,6 @@ export function TradeSummaryContent(props: TradeSummaryContentProps) {
 
         {/* Min/Max received */}
         <RowReceivedAfterSlippage trade={trade} showHelpers={showHelpers} allowedSlippage={allowedSlippage} />
-
         {/* DONATION */}
         {showDonation && donationAmount && (
           <StyledRowBetween>
