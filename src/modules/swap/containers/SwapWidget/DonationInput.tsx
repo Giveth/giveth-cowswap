@@ -114,6 +114,7 @@ const DonationInput = () => {
             max={100}
             step={0.01}
             value={donationPercentage}
+            onClick={(e) => (e.target as HTMLInputElement).select()}
             onChange={(e) => {
               let input = Number(e.target.value)
               input = Number(Number(input).toFixed(3))
