@@ -113,7 +113,7 @@ const DonationInput = () => {
             min={0}
             max={100}
             step={0.01}
-            defaultValue={donationPercentage}
+            value={donationPercentage}
             onChange={(e) => {
               let input = Number(e.target.value)
               input = Number(Number(input).toFixed(3))
