@@ -214,15 +214,13 @@ export default function SwapModalHeader({
       {donationAmount && (
         <RowBetween>
           <Text fontSize={12} fontWeight={500} color={theme.text3}>
-            Giveth Donation{' '}
+            Public Goods Donation{' '}
             <MouseoverTooltipContent content={'A percentage of your swap goes to donation.eth'} wrap>
               <StyledInfoIcon size={16} />
             </MouseoverTooltipContent>
           </Text>
           <Text fontSize={12} fontWeight={500}>
-            {`${donationAmount.toFixed(5)} ${donationAmount.currency.symbol} (≈$${+donationAmount
-              .multiply(trade?.executionPrice!)
-              .toFixed(5)})`}
+            {`${donationAmount.toFixed(5)} ${donationAmount.currency.symbol} `}
           </Text>
         </RowBetween>
       )}

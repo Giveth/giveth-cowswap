@@ -74,17 +74,13 @@ export function TradeBasicDetails(props: TradeBasicDetailsProp) {
         <StyledRowBetween>
           <RowFixed>
             <TextWrapper>
-              Giveth Donation{'  '}
+              Public Goods Donation{'  '}
               <MouseoverTooltipContent wrap={false} content={'A percentage of your swap goes to donation.eth'}>
                 <StyledInfoIcon size={16} />
               </MouseoverTooltipContent>
             </TextWrapper>
           </RowFixed>
-          <TextWrapper>
-            {`${donationAmount.toExact()} ${donationAmount.currency.symbol} (≈$${+donationAmount
-              .multiply(trade?.executionPrice!)
-              .toExact()})`}
-          </TextWrapper>
+          <TextWrapper>{`${donationAmount.toExact()} ${donationAmount.currency.symbol} `}</TextWrapper>
         </StyledRowBetween>
       )}
     </LowerSectionWrapper>

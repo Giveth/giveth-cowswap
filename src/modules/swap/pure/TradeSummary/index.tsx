@@ -59,16 +59,12 @@ export function TradeSummaryContent(props: TradeSummaryContentProps) {
         {showDonation && donationAmount && (
           <StyledRowBetween>
             <TextWrapper>
-              Giveth Donation{' '}
+              Public Goods Donation{' '}
               <MouseoverTooltipContent content={'A percentage of your swap goes to donation.eth'} wrap>
                 <StyledInfoIcon size={16} />
               </MouseoverTooltipContent>
             </TextWrapper>
-            <TextWrapper>
-              {`${donationAmount.toExact()} ${donationAmount.currency.symbol} (≈$${+donationAmount
-                .multiply(trade?.executionPrice!)
-                .toExact()})`}
-            </TextWrapper>
+            <TextWrapper>{`${donationAmount.toExact()} ${donationAmount.currency.symbol}`}</TextWrapper>
           </StyledRowBetween>
         )}
       </AutoColumn>
