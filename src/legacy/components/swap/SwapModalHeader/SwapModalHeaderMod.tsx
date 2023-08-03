@@ -215,7 +215,7 @@ export default function SwapModalHeader({
         <RowBetween>
           <Text fontSize={12} fontWeight={500} color={theme.text3}>
             Giveth Donation{' '}
-            <MouseoverTooltipContent content={'1% of your swap goes to donation.eth'} wrap>
+            <MouseoverTooltipContent content={'A percentage of your swap goes to donation.eth'} wrap>
               <StyledInfoIcon size={16} />
             </MouseoverTooltipContent>
           </Text>

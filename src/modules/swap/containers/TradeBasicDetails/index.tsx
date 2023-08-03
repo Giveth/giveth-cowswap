@@ -75,7 +75,7 @@ export function TradeBasicDetails(props: TradeBasicDetailsProp) {
           <RowFixed>
             <TextWrapper>
               Giveth Donation{'  '}
-              <MouseoverTooltipContent wrap={false} content={'1% of your swap goes to donation.eth'}>
+              <MouseoverTooltipContent wrap={false} content={'A percentage of your swap goes to donation.eth'}>
                 <StyledInfoIcon size={16} />
               </MouseoverTooltipContent>
             </TextWrapper>

@@ -60,7 +60,7 @@ export function TradeSummaryContent(props: TradeSummaryContentProps) {
           <StyledRowBetween>
             <TextWrapper>
               Giveth Donation{' '}
-              <MouseoverTooltipContent content={'1% of your swap goes to donation.eth'} wrap>
+              <MouseoverTooltipContent content={'A percentage of your swap goes to donation.eth'} wrap>
                 <StyledInfoIcon size={16} />
               </MouseoverTooltipContent>
             </TextWrapper>
