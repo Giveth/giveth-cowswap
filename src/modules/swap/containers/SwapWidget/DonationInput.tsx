@@ -115,7 +115,8 @@ const DonationInput = () => {
             step={0.01}
             value={donationPercentage}
             onClick={(e) => (e.target as HTMLInputElement).select()}
-            onChange={(e) => {
+            onChange={(e: any) => {
+              if (!e.target.value) return setDonationPercentage(e.target.value)
               let input = Number(e.target.value)
               input = Number(Number(input).toFixed(3))
               setDonationPercentage(input)

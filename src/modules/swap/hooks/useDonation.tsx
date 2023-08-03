@@ -28,7 +28,7 @@ export const DonationProvider: React.FC<DonationToggleProviderProps> = ({ childr
 
   const setDonationPercentage = (percentage: number) => {
     setPercentage(percentage)
-    if (percentage === 0) {
+    if (Number(percentage) === 0) {
       setIsDonationEnabled(false)
     } else {
       setIsDonationEnabled(true)
