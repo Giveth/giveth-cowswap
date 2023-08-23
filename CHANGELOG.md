@@ -1,5 +1,134 @@
 # Changelog
 
+## [1.45.1](https://github.com/cowprotocol/cowswap/compare/v1.45.0...v1.45.1) (2023-08-23)
+
+
+### Bug Fixes
+
+* handle error in case erc1155 id cannot be converted to BigNumber ([#3073](https://github.com/cowprotocol/cowswap/issues/3073)) ([82a549d](https://github.com/cowprotocol/cowswap/commit/82a549d54b427a5555eb6ddc93135798908c0714))
+
+## [1.45.0](https://github.com/cowprotocol/cowswap/compare/v1.44.7...v1.45.0) (2023-08-21)
+
+
+### Features
+
+* nx workspaces migration ([#2965](https://github.com/cowprotocol/cowswap/issues/2965)) ([f6f4e4d](https://github.com/cowprotocol/cowswap/commit/f6f4e4d0b143c4ecb056269facf2f26bce638b19))
+
+
+### Bug Fixes
+
+* **twap:** display "Minimum sell size" banner only when there is a buy amount ([#3064](https://github.com/cowprotocol/cowswap/issues/3064)) ([60c7e36](https://github.com/cowprotocol/cowswap/commit/60c7e36452b923242771f4b28f065625b60b5911))
+
+## [1.44.7](https://github.com/cowprotocol/cowswap/compare/v1.44.6...v1.44.7) (2023-08-16)
+
+
+### Bug Fixes
+
+* version the storage name for the fallback handler ([#3061](https://github.com/cowprotocol/cowswap/issues/3061)) ([ac63cbf](https://github.com/cowprotocol/cowswap/commit/ac63cbfaf20b2e6d31561ad84f67b936f681d366))
+
+## [1.44.6](https://github.com/cowprotocol/cowswap/compare/v1.44.5...v1.44.6) (2023-08-16)
+
+
+### Bug Fixes
+
+* fix lint issues ([#3056](https://github.com/cowprotocol/cowswap/issues/3056)) ([9daa175](https://github.com/cowprotocol/cowswap/commit/9daa1756355a297cb2e9090b4a144ae0e862fbab))
+
+## [1.44.5](https://github.com/cowprotocol/cowswap/compare/v1.44.4...v1.44.5) (2023-08-16)
+
+
+### Bug Fixes
+
+* **twap:** update links to blog ([#3054](https://github.com/cowprotocol/cowswap/issues/3054)) ([f39ee10](https://github.com/cowprotocol/cowswap/commit/f39ee10b9fe1a7c227f149f7ea8a97da3bf70075))
+
+## [1.44.4](https://github.com/cowprotocol/cowswap/compare/v1.44.3...v1.44.4) (2023-08-16)
+
+
+### Features
+
+* **orders-table:** display order receiver address ([#3042](https://github.com/cowprotocol/cowswap/issues/3042)) ([948c46d](https://github.com/cowprotocol/cowswap/commit/948c46dd6072efb7324b53b4a29a2c9cca268b9f))
+
+
+### Bug Fixes
+
+* correct version ([4f170ac](https://github.com/cowprotocol/cowswap/commit/4f170ace726efcdb9ea56cf09eac4364ae38b15d))
+* disable limit orders state sync between tabs ([#3041](https://github.com/cowprotocol/cowswap/issues/3041)) ([2ac7b1a](https://github.com/cowprotocol/cowswap/commit/2ac7b1abe0104997d3bd914ad4b359f18682a91e))
+
+## [1.44.3](https://github.com/cowprotocol/cowswap/compare/v1.44.2...v1.44.3) (2023-08-11)
+
+
+### Features
+
+* **twap:** update contract addresses ([#3031](https://github.com/cowprotocol/cowswap/issues/3031)) ([6306bd2](https://github.com/cowprotocol/cowswap/commit/6306bd26ee652be0dde6bb0bf2b9ed1f0ba8ff06))
+
+
+### Miscellaneous Chores
+
+* **release:** hotfix 1.44.3: Merge pull request [#3039](https://github.com/cowprotocol/cowswap/issues/3039) from cowprotocol/hotfix/1.44.3 ([7334827](https://github.com/cowprotocol/cowswap/commit/733482728a2d84baea42ccdb50ef62c7b943dea5))
+
+## [1.44.2](https://github.com/cowprotocol/cowswap/compare/v1.44.1...v1.44.2) (2023-08-10)
+
+
+### Features
+
+* enhance input arrows ([69cb56a](https://github.com/cowprotocol/cowswap/commit/69cb56accda4e5a53fd460910b8c3097b31d42e4))
+* fix styles custom deadline twap ([#3006](https://github.com/cowprotocol/cowswap/issues/3006)) ([e948bdd](https://github.com/cowprotocol/cowswap/commit/e948bddc57d5481627610f18f7115ca715a09a6b))
+
+
+### Bug Fixes
+
+* **twap:** don't crash app while swap amount diff calculation ([#3033](https://github.com/cowprotocol/cowswap/issues/3033)) ([950d766](https://github.com/cowprotocol/cowswap/commit/950d7661e2c73df45b7c4c6ee1323928cc0d8d5c))
+
+## [1.44.1](https://github.com/cowprotocol/cowswap/compare/v1.44.0...v1.44.1) (2023-08-10)
+
+
+### Features
+
+* enhance input arrows ([e1aa378](https://github.com/cowprotocol/cowswap/commit/e1aa3781f2b512b39615b720aca37b4fa83e55b9))
+* fix text selection prevention ([6e4e180](https://github.com/cowprotocol/cowswap/commit/6e4e1803415519341c5667d56b1a8c9d6776c25d))
+* **number-input-arrows:** re-applying the squashed commit ([#2970](https://github.com/cowprotocol/cowswap/issues/2970)) ([e1aa378](https://github.com/cowprotocol/cowswap/commit/e1aa3781f2b512b39615b720aca37b4fa83e55b9))
+* text change ([#3019](https://github.com/cowprotocol/cowswap/issues/3019)) ([3c9c09f](https://github.com/cowprotocol/cowswap/commit/3c9c09f7b1628dbd0c712f50e19c6bee9f30687e))
+
+
+### Bug Fixes
+
+* **price-impact:** improve price impact loading ([#3014](https://github.com/cowprotocol/cowswap/issues/3014)) ([29763f4](https://github.com/cowprotocol/cowswap/commit/29763f4a5336cc96ef3fe05bcb66d2241216012e))
+* **twap:** fix Fulfilled status detection ([#2987](https://github.com/cowprotocol/cowswap/issues/2987)) ([f7631f4](https://github.com/cowprotocol/cowswap/commit/f7631f4b35b32209433a6ea43a6f54188967eee3))
+* **twap:** load unknown tokens from blockchain ([#3028](https://github.com/cowprotocol/cowswap/issues/3028)) ([6002ee3](https://github.com/cowprotocol/cowswap/commit/6002ee3be769de4a0963d77be74118a43ae661f1))
+
+## [1.44.0](https://github.com/cowprotocol/cowswap/compare/v1.43.0...v1.44.0) (2023-08-07)
+
+
+### Features
+
+* disabled to readonly ([#2996](https://github.com/cowprotocol/cowswap/issues/2996)) ([996516e](https://github.com/cowprotocol/cowswap/commit/996516e42679153a700ff75dd3bcac9a2d7ad102))
+* revert release version ([57a31e9](https://github.com/cowprotocol/cowswap/commit/57a31e93048ea188a363f24af255c55d225b828f))
+* set release version ([15a158c](https://github.com/cowprotocol/cowswap/commit/15a158cfcfb6ad07ba6e5d5019c6d244b87ec0f4))
+* **swap:** enhance styles of twap suggestion banner ([#2963](https://github.com/cowprotocol/cowswap/issues/2963)) ([a39550d](https://github.com/cowprotocol/cowswap/commit/a39550d923f9d369bd933b93be303d54a956ca28))
+* **swap:** suggest using TWAP ([#2934](https://github.com/cowprotocol/cowswap/issues/2934)) ([c0be792](https://github.com/cowprotocol/cowswap/commit/c0be792ff10f56ea8a0cc6bab41a6692515c8a6a))
+* **twap:** display banner with swap amount difference ([#2932](https://github.com/cowprotocol/cowswap/issues/2932)) ([0b081c6](https://github.com/cowprotocol/cowswap/commit/0b081c63ccd6ba003a1d07104eba608c4cd17151))
+* **twap:** display Creating... for Scheduled orders when it's supposed to be created already ([#2946](https://github.com/cowprotocol/cowswap/issues/2946)) ([f8fdcc7](https://github.com/cowprotocol/cowswap/commit/f8fdcc75fc8d7ba2a181a724eb959e8d1ad7cc0e))
+* **twap:** display order group in history tab ([#2948](https://github.com/cowprotocol/cowswap/issues/2948)) ([3bce96a](https://github.com/cowprotocol/cowswap/commit/3bce96ad79391c4875e66b2b9a6443366db863ad))
+* **twap:** fetch first 200 transactions using pagination ([#2994](https://github.com/cowprotocol/cowswap/issues/2994)) ([784ceb1](https://github.com/cowprotocol/cowswap/commit/784ceb175ce0552535bbdbd79ca21ca1bb4ecf3a))
+* **verify-quote:** add feature flag ([#2975](https://github.com/cowprotocol/cowswap/issues/2975)) ([8c52641](https://github.com/cowprotocol/cowswap/commit/8c52641780c44158726e9620ed030daa41dbfc2e))
+
+
+### Bug Fixes
+
+* dont upload app-data in bundle-safe-flow ([#2998](https://github.com/cowprotocol/cowswap/issues/2998)) ([4b88c1d](https://github.com/cowprotocol/cowswap/commit/4b88c1d04fa2f84342f64ebf5c72e587bb59142f))
+* fix issue uploading appData in STAGING ([#3012](https://github.com/cowprotocol/cowswap/issues/3012)) ([651cc84](https://github.com/cowprotocol/cowswap/commit/651cc84fb3d35126e3b8a19036f310804601ddf2))
+* **menu:** display explorer home link when wallet is not connected ([#2972](https://github.com/cowprotocol/cowswap/issues/2972)) ([4e3f50c](https://github.com/cowprotocol/cowswap/commit/4e3f50ced9baa43391465aba04f77b0559635385))
+* pass account address along with other verified quote params ([#3016](https://github.com/cowprotocol/cowswap/issues/3016)) ([7c4d893](https://github.com/cowprotocol/cowswap/commit/7c4d89382cbf86436141a47a7fe314187970016b))
+* solve issue in safari being broken ([#2997](https://github.com/cowprotocol/cowswap/issues/2997)) ([7fd99c1](https://github.com/cowprotocol/cowswap/commit/7fd99c1fe44c84ea3f9d5ca6f775e8b544fcc7bd))
+* **swap:** change quote amount for price impact calculation on Gnosis chain ([#2980](https://github.com/cowprotocol/cowswap/issues/2980)) ([ca190c4](https://github.com/cowprotocol/cowswap/commit/ca190c4b202f528cc71b44fe6ab22bdcfcdbddbd))
+* **swap:** display correct value of slippage in min. price tooltip ([#2982](https://github.com/cowprotocol/cowswap/issues/2982)) ([e519a8f](https://github.com/cowprotocol/cowswap/commit/e519a8f95ebb8f19e0624b6157458e0c9aef5dde))
+* **swap:** use symbol instead of address for native tokens ([#2961](https://github.com/cowprotocol/cowswap/issues/2961)) ([0b8caa5](https://github.com/cowprotocol/cowswap/commit/0b8caa59c085bb79eae7f8e0a440404fba3511b5))
+* **twap:** always display price diff warning ([#2973](https://github.com/cowprotocol/cowswap/issues/2973)) ([2ed4c5d](https://github.com/cowprotocol/cowswap/commit/2ed4c5df9bdaaed819709ebefcf3aaa711e76834))
+* **twap:** display actual value for num of parts and custom deadline ([#2952](https://github.com/cowprotocol/cowswap/issues/2952)) ([4762e6f](https://github.com/cowprotocol/cowswap/commit/4762e6faf29ed93d9e717e98287f3ae800feab63))
+* **twap:** don't redirect to swap when feature-flag value is not defined ([#2981](https://github.com/cowprotocol/cowswap/issues/2981)) ([105705b](https://github.com/cowprotocol/cowswap/commit/105705b566c21535b33204679dd3746dfe1dde67))
+* upload app-data to the right network ([#2978](https://github.com/cowprotocol/cowswap/issues/2978)) ([42de133](https://github.com/cowprotocol/cowswap/commit/42de1331643779b939229c25449eb7a6efd9281d))
+* upload appData to ETH flow ([#2986](https://github.com/cowprotocol/cowswap/issues/2986)) ([7bb7676](https://github.com/cowprotocol/cowswap/commit/7bb76760823d41b66133a07db5b83d42b41edeae))
+* use currency decimals for surplus amount calculation ([#3000](https://github.com/cowprotocol/cowswap/issues/3000)) ([1432b6d](https://github.com/cowprotocol/cowswap/commit/1432b6da784bc68f2f07aa8976527c6f83a87470))
+
 ## [1.43.0](https://github.com/cowprotocol/cowswap/compare/v1.42.0...v1.43.0) (2023-07-26)
 
 
