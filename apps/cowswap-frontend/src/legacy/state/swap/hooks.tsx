@@ -396,7 +396,8 @@ export function useDerivedSwapInfo(): DerivedSwapInfo {
     // const [balanceIn, amountIn] = [currencyBalances[Field.INPUT], trade.trade?.maximumAmountIn(allowedSlippage)] // mod
     const balanceIn = currencyBalances[Field.INPUT]
     const amountIn = slippageAdjustedSellAmount
-    const totalAmount = withDonation && donationAmount && amountIn ? amountIn.add(donationAmount) : amountIn
+    const totalAmount = amountIn
+    // const totalAmountWithDonation = withDonation && donationAmount && amountIn ? amountIn.add(donationAmount) : amountIn
 
     // Balance not loaded - fix for https://github.com/cowprotocol/cowswap/issues/451
     if (!balanceIn && inputCurrency) {
