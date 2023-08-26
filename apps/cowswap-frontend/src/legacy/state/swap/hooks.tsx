@@ -283,13 +283,27 @@ export function useDerivedSwapInfo(): DerivedSwapInfo {
     useMemo(() => [inputCurrency ?? undefined, outputCurrency ?? undefined], [inputCurrency, outputCurrency])
   )
 
-  const isExactIn: boolean = independentField === Field.INPUT
-  const parsedAmount = useMemo(
-    () => tryParseCurrencyAmount(typedValue, (isExactIn ? inputCurrency : outputCurrency) ?? undefined),
-    [inputCurrency, isExactIn, outputCurrency, typedValue]
+  const currencyBalances = useMemo(
+    () => ({
+      [Field.INPUT]: relevantTokenBalances[0],
+      [Field.OUTPUT]: relevantTokenBalances[1],
+    }),
+    [relevantTokenBalances]
   )
 
-  // 1% is the default donation amount
+  const isExactIn: boolean = independentField === Field.INPUT
+  const parsedAmount = useMemo(() => {
+    const current = currencyBalances[Field.INPUT]
+    const valuePlusDonation: string =
+      typedValue && donationPercentage ? (+typedValue * (1 + donationPercentage / 100)).toString() : typedValue
+    let amountToParse = typedValue
+    if (Number(current?.toExact()) <= Number(valuePlusDonation)) {
+      const valueMinusDonation = +typedValue * (1 - donationPercentage / 100)
+      amountToParse = valueMinusDonation < 0 ? '0' : valueMinusDonation.toString()
+    }
+    return tryParseCurrencyAmount(amountToParse, (isExactIn ? inputCurrency : outputCurrency) ?? undefined)
+  }, [inputCurrency, isExactIn, outputCurrency, typedValue, donationPercentage, currencyBalances])
+
   const donationAmount = useMemo(() => {
     return parsedAmount
       ? parsedAmount.multiply(JSBI.BigInt(donationPercentage * 10000)).divide(JSBI.BigInt(1000000))
@@ -346,14 +360,6 @@ export function useDerivedSwapInfo(): DerivedSwapInfo {
 
   registerOnWindow({ trade: v2Trade })
   // -- MOD --
-
-  const currencyBalances = useMemo(
-    () => ({
-      [Field.INPUT]: relevantTokenBalances[0],
-      [Field.OUTPUT]: relevantTokenBalances[1],
-    }),
-    [relevantTokenBalances]
-  )
 
   // allowed slippage is either auto slippage, or custom user defined slippage if auto slippage disabled
   // TODO: check whether we want to enable auto slippage tolerance
